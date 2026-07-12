@@ -187,15 +187,15 @@ export default function Login() {
             <div className="space-y-1 text-xs text-muted-foreground">
               <p>
                 <span className="font-medium text-foreground">Admin :</span>{' '}
-                admin@medinsight.dz
+                admin@medinsight.dz / admin123
               </p>
               <p>
                 <span className="font-medium text-foreground">Médecin :</span>{' '}
-                doctor@medinsight.dz
+                dr.benali@medinsight.dz / doctor123
               </p>
               <p>
-                <span className="font-medium text-foreground">Infirmier :</span>{' '}
-                nurse@medinsight.dz
+                <span className="font-medium text-foreground">Chercheur :</span>{' '}
+                researcher@medinsight.dz / researcher123
               </p>
             </div>
           </div>
