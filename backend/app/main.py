@@ -18,7 +18,7 @@ limiter = Limiter(key_func=get_remote_address)
 async def seed_default_data():
     """Seed default users, facility, patients, and cases if DB is empty."""
     from app.domain.models import Facility, User, Patient, ClinicalCase
-    from app.domain.enums import UserRole, OutcomeStatus, FacilityType
+    from app.domain.enums import UserRole, FacilityType
     from app.infrastructure.security import get_password_hash
     import uuid
 
@@ -42,34 +42,51 @@ async def seed_default_data():
         await db.flush()
 
         users = [
-            User(
-                id=uuid.uuid4(), facility_id=facility.id,
-                firstname="Admin", lastname="MedInsight",
-                email="admin@medinsight.dz",
-                password_hash=get_password_hash("admin123"),
-                role=UserRole.ADMIN, is_active=True,
-            ),
-            User(
-                id=uuid.uuid4(), facility_id=facility.id,
-                firstname="Youcef", lastname="Benali",
-                email="dr.benali@medinsight.dz",
-                password_hash=get_password_hash("doctor123"),
-                role=UserRole.DOCTOR, is_active=True,
-            ),
-            User(
-                id=uuid.uuid4(), facility_id=facility.id,
-                firstname="Amina", lastname="Khelifi",
-                email="researcher@medinsight.dz",
-                password_hash=get_password_hash("researcher123"),
-                role=UserRole.RESEARCHER, is_active=True,
-            ),
+            # --- Admins ---
+            User(id=uuid.uuid4(), facility_id=facility.id, firstname="Admin", lastname="MedInsight",
+                 email="admin@medinsight.dz", password_hash=get_password_hash("admin123"),
+                 role=UserRole.ADMIN, is_active=True),
+            User(id=uuid.uuid4(), facility_id=facility.id, firstname="Sara", lastname="Boudiaf",
+                 email="sara.admin@medinsight.dz", password_hash=get_password_hash("admin123"),
+                 role=UserRole.ADMIN, is_active=True),
+            # --- Doctors ---
+            User(id=uuid.uuid4(), facility_id=facility.id, firstname="Youcef", lastname="Benali",
+                 email="dr.benali@medinsight.dz", password_hash=get_password_hash("doctor123"),
+                 role=UserRole.DOCTOR, is_active=True),
+            User(id=uuid.uuid4(), facility_id=facility.id, firstname="Fatima", lastname="Zerhouni",
+                 email="dr.zerhouni@medinsight.dz", password_hash=get_password_hash("doctor123"),
+                 role=UserRole.DOCTOR, is_active=True),
+            User(id=uuid.uuid4(), facility_id=facility.id, firstname="Karim", lastname="Mansouri",
+                 email="dr.mansouri@medinsight.dz", password_hash=get_password_hash("doctor123"),
+                 role=UserRole.DOCTOR, is_active=True),
+            User(id=uuid.uuid4(), facility_id=facility.id, firstname="Lydia", lastname="Ait Ahmed",
+                 email="dr.aitahmed@medinsight.dz", password_hash=get_password_hash("doctor123"),
+                 role=UserRole.DOCTOR, is_active=True),
+            User(id=uuid.uuid4(), facility_id=facility.id, firstname="Omar", lastname="Taleb",
+                 email="dr.taleb@medinsight.dz", password_hash=get_password_hash("doctor123"),
+                 role=UserRole.DOCTOR, is_active=True),
+            # --- Researchers ---
+            User(id=uuid.uuid4(), facility_id=facility.id, firstname="Amina", lastname="Khelifi",
+                 email="researcher@medinsight.dz", password_hash=get_password_hash("researcher123"),
+                 role=UserRole.RESEARCHER, is_active=True),
+            User(id=uuid.uuid4(), facility_id=facility.id, firstname="Rachid", lastname="Bouzid",
+                 email="rachid.research@medinsight.dz", password_hash=get_password_hash("researcher123"),
+                 role=UserRole.RESEARCHER, is_active=True),
+            User(id=uuid.uuid4(), facility_id=facility.id, firstname="Nadia", lastname="Cherif",
+                 email="nadia.research@medinsight.dz", password_hash=get_password_hash("researcher123"),
+                 role=UserRole.RESEARCHER, is_active=True),
         ]
         db.add_all(users)
         await db.flush()
 
-        doctor = users[1]
+        doctors = [u for u in users if u.role == UserRole.DOCTOR]
+
         patients = []
-        for sex, age, bg in [("M", 45, "A+"), ("F", 32, "O+"), ("M", 67, "B-"), ("F", 28, "AB+"), ("M", 55, "A-")]:
+        for sex, age, bg in [
+            ("M", 45, "A+"), ("F", 32, "O+"), ("M", 67, "B-"), ("F", 28, "AB+"), ("M", 55, "A-"),
+            ("F", 41, "O-"), ("M", 23, "A+"), ("F", 70, "B+"), ("M", 38, "AB-"), ("F", 52, "A+"),
+            ("M", 61, "O+"), ("F", 29, "B-"), ("M", 48, "A-"), ("F", 35, "AB+"), ("M", 73, "O+"),
+        ]:
             patients.append(Patient(
                 id=uuid.uuid4(), facility_id=facility.id,
                 sex=sex, age=age, blood_group=bg,
@@ -90,12 +107,22 @@ async def seed_default_data():
             ("Gastrite chronique", "Omeprazole 20mg", "PENDING"),
             ("Anemie ferriprive", "Sulfate ferreux", "SUCCESS"),
             ("Depression majeure", "Sertraline 50mg", "IN_PROGRESS"),
+            ("Cardiopathie ischémique", "Aspirine 75mg + Atorvastatine", "IN_PROGRESS"),
+            ("Bronchopneumonie", "Ceftriaxone 1g IV", "SUCCESS"),
+            ("Cirrhose hepatique", "Spironolactone 100mg", "FAILURE"),
+            ("Polyarthrite rhumatoide", "Methotrexate 15mg/semaine", "IN_PROGRESS"),
+            ("AVC ischémique", "Plavix 75mg + rehabilitation", "PENDING"),
+            ("Ulcere gastrique", "Pantoprazole 40mg", "SUCCESS"),
+            ("Kyste ovarien", "Surveillance + Antalgie", "PENDING"),
+            ("Lombalgie chronique", "Diclofenac + Kinésithérapie", "IN_PROGRESS"),
+            ("Diabete gestationnel", "Regime + Insuline", "SUCCESS"),
+            ("Tuberculose pulmonaire", "Quadri thérapie 6 mois", "IN_PROGRESS"),
         ]
         for i, (diag, treatment, status) in enumerate(cases_data, 1):
             db.add(ClinicalCase(
                 id=uuid.uuid4(), facility_id=facility.id,
                 patient_id=patients[i % len(patients)].id,
-                doctor_id=doctor.id,
+                doctor_id=doctors[i % len(doctors)].id,
                 symptoms_json={"primary": diag, "severity": "moderate"},
                 provisional_diagnosis=diag, treatment=treatment,
                 treatment_duration=f"{i} mois", outcome_status=status,
@@ -104,7 +131,7 @@ async def seed_default_data():
             ))
 
         await db.commit()
-        print("Default data seeded: 3 users, 5 patients, 10 cases")
+        print(f"Seed done: {len(users)} users, {len(patients)} patients, {len(cases_data)} cases")
 
 
 @asynccontextmanager
