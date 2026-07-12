@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import {
-  HeartPulse,
   FolderOpen,
   RefreshCw,
   Shield,
@@ -124,19 +123,6 @@ const checklist = [
   'Déployé dans plus de 50 établissements',
 ]
 
-function ImagePlaceholder({ className = '' }: { className?: string }) {
-  return (
-    <div
-      className={`flex items-center justify-center rounded-3xl bg-gradient-to-br from-primary/10 via-accent/10 to-primary/5 ${className}`}
-    >
-      <div className="flex flex-col items-center gap-3 text-primary/30">
-        <HeartPulse className="h-16 w-16" />
-        <span className="text-sm font-medium">Image</span>
-      </div>
-    </div>
-  )
-}
-
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -159,7 +145,7 @@ export default function LandingPage() {
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-2">
-            <HeartPulse className="h-7 w-7 text-primary" />
+            <img src="/logo.png" alt="MedInsight" className="h-7 w-7 object-contain" />
             <span className="text-lg font-bold text-foreground">MedInsight</span>
           </Link>
 
@@ -269,7 +255,7 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden animate-fade-in-up lg:block" style={{ animationDelay: '0.2s' }}>
-            <ImagePlaceholder className="aspect-[4/3] w-full rounded-3xl border border-white/10 shadow-2xl" />
+            <img src="/hero-illustration.png" alt="MedInsight Dashboard" className="aspect-[4/3] w-full rounded-3xl border border-white/10 shadow-2xl object-cover" />
           </div>
         </div>
 
@@ -367,7 +353,7 @@ export default function LandingPage() {
               </Button>
             </div>
 
-            <ImagePlaceholder className="aspect-[1/1.1] w-full rounded-3xl shadow-xl" />
+            <img src="/about-illustration.png" alt="MedInsight Team" className="aspect-[1/1.1] w-full rounded-3xl shadow-xl object-cover" />
           </div>
         </div>
       </section>
@@ -503,7 +489,7 @@ export default function LandingPage() {
             {/* Brand */}
             <div>
               <div className="mb-4 flex items-center gap-2">
-                <HeartPulse className="h-6 w-6 text-accent" />
+                <img src="/logo.png" alt="MedInsight" className="h-6 w-6 object-contain" />
                 <span className="text-lg font-bold text-white">MedInsight</span>
               </div>
               <p className="mb-4 text-sm leading-relaxed text-white/50">

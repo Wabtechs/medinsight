@@ -42,7 +42,7 @@ A warm, modern flat illustration of a diverse medical team collaborating around 
 
 ## Usage Notes
 1. Generate images at 2x resolution (e.g., 800x600 for hero, 600x660 for about)
-2. Save as `public/hero-illustration.png` and `public/about-illustration.png`
+2. Save as `C:\Users\WAB\3D Objects\Projects\Mm Projet MED\img` and `public/about-illustration.png`
 3. Update `src/pages/landing/index.tsx` to use `<img>` tags instead of `<ImagePlaceholder>`
 4. Ensure images are optimized (< 200KB each) for fast loading
 5. Test on both desktop and mobile viewports
