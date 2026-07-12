@@ -4,7 +4,18 @@ from app.config import get_settings
 
 settings = get_settings()
 
-engine = create_async_engine(settings.DATABASE_URL, echo=False, pool_size=20, max_overflow=10)
+connect_args = {}
+if "neon.tech" in settings.DATABASE_URL:
+    connect_args["ssl"] = "require"
+
+engine = create_async_engine(
+    settings.DATABASE_URL,
+    echo=False,
+    pool_size=5,
+    max_overflow=5,
+    pool_pre_ping=True,
+    connect_args=connect_args,
+)
 async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 
