@@ -22,12 +22,8 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { RechartsChart } from '@/components/charts/recharts-chart'
-import {
-  mockClinicalCases,
-  mockPatients,
-  mockFacilities,
-  mockChartData,
-} from '@/lib/mock-data'
+import { useDashboardData } from '@/hooks/use-data'
+import { mockPatients, mockFacilities } from '@/lib/mock-data'
 import { formatDate, formatNumber } from '@/lib/utils'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -53,41 +49,43 @@ function getGreeting(): string {
 }
 
 export default function DashboardPage() {
-  const totalCases = mockClinicalCases.length
-  const activePatients = mockPatients.filter((p) => p.isActive).length
-  const facilitiesCount = mockFacilities.length
-  const resolvedCases = mockClinicalCases.filter((c) => c.status === 'resolved').length
-  const resolutionRate = totalCases > 0 ? Math.round((resolvedCases / totalCases) * 100) : 0
+  const { data, isLoading } = useDashboardData()
 
-  const recentCases = [...mockClinicalCases]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    .slice(0, 5)
+  if (isLoading || !data) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">Chargement du tableau de bord…</p>
+      </div>
+    )
+  }
 
-  const stats = [
+  const { stats, recentCases, chartData } = data
+
+  const statsCards = [
     {
       title: 'Total Cas Cliniques',
-      value: formatNumber(totalCases),
+      value: formatNumber(stats.total_cases),
       change: '+12%',
       changeType: 'increase' as const,
       icon: FolderOpen,
     },
     {
       title: 'Patients Actifs',
-      value: formatNumber(activePatients),
+      value: formatNumber(stats.total_patients),
       change: '+5%',
       changeType: 'increase' as const,
       icon: UserRound,
     },
     {
       title: 'Établissements',
-      value: formatNumber(facilitiesCount),
+      value: formatNumber(stats.total_facilities),
       change: '+2%',
       changeType: 'increase' as const,
       icon: Building2,
     },
     {
       title: 'Taux de Résolution',
-      value: `${resolutionRate}%`,
+      value: `${stats.resolution_rate}%`,
       change: '+3%',
       changeType: 'increase' as const,
       icon: TrendingUp,
@@ -106,7 +104,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
+        {statsCards.map((stat) => {
           const Icon = stat.icon
           return (
             <Card
@@ -148,7 +146,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <RechartsChart
           type="area"
-          data={mockChartData.casesByMonth}
+          data={chartData.casesByMonth}
           dataKey="value"
           xAxisKey="name"
           title="Cas par Mois"
@@ -157,7 +155,7 @@ export default function DashboardPage() {
         />
         <RechartsChart
           type="pie"
-          data={mockChartData.casesByStatus}
+          data={chartData.casesByStatus}
           dataKey="value"
           xAxisKey="name"
           title="Répartition par Statut"

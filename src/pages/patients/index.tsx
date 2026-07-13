@@ -31,7 +31,8 @@ import {
 } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { mockPatients, mockFacilities } from '@/lib/mock-data'
+import { usePatientsData } from '@/hooks/use-data'
+import { mockFacilities } from '@/lib/mock-data'
 import { cn, formatDate } from '@/lib/utils'
 
 const ITEMS_PER_PAGE = 10
@@ -66,8 +67,11 @@ export default function PatientsPage() {
     allergies: '',
   })
 
+  const { data, isLoading } = usePatientsData()
+  const patients = data?.items ?? []
+
   const filtered = useMemo(() => {
-    return mockPatients.filter((p) => {
+    return patients.filter((p) => {
       const fullName = `${p.firstName} ${p.lastName}`.toLowerCase()
       const matchesSearch =
         !search ||
@@ -109,6 +113,12 @@ export default function PatientsPage() {
 
   return (
     <div className="space-y-6">
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20">
+          <p className="text-muted-foreground">Chargement des patients...</p>
+        </div>
+      ) : (
+      <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Gestion des Patients</h1>
@@ -495,6 +505,8 @@ export default function PatientsPage() {
             </Button>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   )

@@ -39,8 +39,10 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table'
-import { mockUsers, mockFacilities } from '@/lib/mock-data'
+import { mockFacilities } from '@/lib/mock-data'
+import { useUsersData } from '@/hooks/use-data'
 import { formatDate, getInitials } from '@/lib/utils'
+import { Skeleton } from '@/components/ui/skeleton'
 import type { User } from '@/types'
 
 const PAGE_SIZE = 10
@@ -82,7 +84,9 @@ export default function Users() {
   const [page, setPage] = useState(1)
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDir, setSortDir] = useState<SortDirection>('asc')
-  const [users, setUsers] = useState(mockUsers)
+  const { data: usersData, isLoading } = useUsersData()
+  const users = usersData?.items ?? []
+  const [localUsers, setLocalUsers] = useState<User[]>([])
 
   const [newName, setNewName] = useState('')
   const [newEmail, setNewEmail] = useState('')
@@ -106,8 +110,10 @@ export default function Users() {
     setPage(1)
   }
 
+  const allUsers = useMemo(() => [...users, ...localUsers], [users, localUsers])
+
   const filtered = useMemo(() => {
-    const result = users.filter((u) => {
+    const result = allUsers.filter((u) => {
       const matchesSearch =
         u.name.toLowerCase().includes(search.toLowerCase()) ||
         u.email.toLowerCase().includes(search.toLowerCase())
@@ -151,7 +157,7 @@ export default function Users() {
     })
 
     return result
-  }, [users, search, roleFilter, sortField, sortDir, facilityMap])
+  }, [allUsers, search, roleFilter, sortField, sortDir, facilityMap])
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -159,7 +165,7 @@ export default function Users() {
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault()
     const user: User = {
-      id: `usr-${String(users.length + 1).padStart(3, '0')}`,
+      id: `usr-${String(allUsers.length + 1).padStart(3, '0')}`,
       name: newName,
       email: newEmail,
       role: newRole,
@@ -169,7 +175,7 @@ export default function Users() {
       createdAt: new Date().toISOString(),
       isActive: true,
     }
-    setUsers((prev) => [...prev, user])
+    setLocalUsers((prev) => [...prev, user])
     setDialogOpen(false)
     setNewName('')
     setNewEmail('')
@@ -177,6 +183,44 @@ export default function Users() {
     setNewFacility('')
     setNewPhone('')
     setNewDepartment('')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Skeleton className="h-8 w-64 mb-2" />
+            <Skeleton className="h-4 w-48" />
+          </div>
+          <Skeleton className="h-10 w-44" />
+        </div>
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <Skeleton className="h-10 flex-1" />
+          <Skeleton className="h-10 w-[200px]" />
+        </div>
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <TableHead key={i}><Skeleton className="h-4 w-full" /></TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={i}>
+                  {Array.from({ length: 7 }).map((_, j) => (
+                    <TableCell key={j}><Skeleton className="h-4 w-full" /></TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    )
   }
 
   return (

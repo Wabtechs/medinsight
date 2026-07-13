@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import {
   Building2,
@@ -32,7 +32,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { mockFacilities } from '@/lib/mock-data'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useFacilitiesData } from '@/hooks/use-data'
 import type { Facility } from '@/types'
 
 const facilityTypeIcons: Record<Facility['type'], React.ReactNode> = {
@@ -50,10 +51,17 @@ const facilityTypeLabels: Record<Facility['type'], string> = {
 }
 
 export default function Facilities() {
+  const { data, isLoading } = useFacilitiesData()
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [facilities, setFacilities] = useState(mockFacilities)
+  const [facilities, setFacilities] = useState<Facility[]>([])
+
+  useEffect(() => {
+    if (data?.items) {
+      setFacilities(data.items)
+    }
+  }, [data?.items])
 
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState<Facility['type']>('hospital')
@@ -97,6 +105,43 @@ export default function Facilities() {
     setNewPhone('')
     setNewEmail('')
     setNewBedCount('')
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="mt-2 h-4 w-80" />
+          </div>
+        </div>
+        <div className="flex flex-col gap-4 sm:flex-row">
+          <Skeleton className="h-10 flex-1" />
+          <Skeleton className="h-10 w-[200px]" />
+        </div>
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}>
+              <CardHeader className="flex flex-row items-start gap-4 space-y-0 pb-4">
+                <Skeleton className="h-12 w-12 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+                <Skeleton className="h-16 w-full rounded-lg" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -310,7 +355,7 @@ export default function Facilities() {
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <Users className="h-3 w-3" />
                     <span>
-                      {mockFacilities.length > 0
+                      {facilities.length > 0
                         ? `${facility.staffCount} employés`
                         : ''}
                     </span>

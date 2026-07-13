@@ -51,11 +51,11 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import {
-  mockClinicalCases,
   mockPatients,
   mockFacilities,
   mockUsers,
 } from '@/lib/mock-data'
+import { useClinicalCasesData } from '@/hooks/use-data'
 import { formatDate } from '@/lib/utils'
 import type { CaseStatus, CasePriority } from '@/types'
 
@@ -78,6 +78,8 @@ const priorityLabels: Record<CasePriority, string> = {
 
 export default function ClinicalCasesPage() {
   const navigate = useNavigate()
+  const { data: casesData, isLoading } = useClinicalCasesData()
+  const clinicalCases = casesData?.items ?? []
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [priorityFilter, setPriorityFilter] = useState<string>('all')
@@ -99,7 +101,7 @@ export default function ClinicalCasesPage() {
   })
 
   const filteredCases = useMemo(() => {
-    return mockClinicalCases.filter((c) => {
+    return clinicalCases.filter((c) => {
       const matchesSearch =
         !search ||
         c.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -113,7 +115,7 @@ export default function ClinicalCasesPage() {
         facilityFilter === 'all' || c.facilityId === facilityFilter
       return matchesSearch && matchesStatus && matchesPriority && matchesFacility
     })
-  }, [search, statusFilter, priorityFilter, facilityFilter])
+  }, [clinicalCases, search, statusFilter, priorityFilter, facilityFilter])
 
   const totalPages = Math.ceil(filteredCases.length / ITEMS_PER_PAGE)
   const paginatedCases = filteredCases.slice(
@@ -144,6 +146,14 @@ export default function ClinicalCasesPage() {
       symptoms: '',
       tags: '',
     })
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <p className="text-sm text-muted-foreground">Chargement des cas cliniques...</p>
+      </div>
+    )
   }
 
   return (
