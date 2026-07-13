@@ -10,8 +10,8 @@ export function useLogin() {
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       api.login(email, password),
     onSuccess: (data) => {
-      localStorage.setItem('medinsight-access-token', data.access_token);
-      localStorage.setItem('medinsight-refresh-token', data.refresh_token);
+      localStorage.setItem('medinsight_token', data.access_token);
+      localStorage.setItem('medinsight_refresh_token', data.refresh_token);
     },
   });
 }

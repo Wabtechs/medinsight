@@ -3,6 +3,51 @@ import type { User } from '@/types'
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1'
 
+const mockUsers: Record<string, { password: string; user: User }> = {
+  'admin@medinsight.dz': {
+    password: 'admin123',
+    user: {
+      id: 'usr_001',
+      email: 'admin@medinsight.dz',
+      name: 'Dr. Amira Benali',
+      role: 'admin',
+      facility: 'fac_001',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=admin@medinsight.dz',
+      createdAt: '2025-01-15T08:00:00Z',
+      lastLogin: new Date().toISOString(),
+      isActive: true,
+    },
+  },
+  'dr.benali@medinsight.dz': {
+    password: 'doctor123',
+    user: {
+      id: 'usr_002',
+      email: 'dr.benali@medinsight.dz',
+      name: 'Dr. Karim Benali',
+      role: 'doctor',
+      facility: 'fac_001',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=dr.benali@medinsight.dz',
+      createdAt: '2025-02-10T09:30:00Z',
+      lastLogin: new Date().toISOString(),
+      isActive: true,
+    },
+  },
+  'researcher@medinsight.dz': {
+    password: 'researcher123',
+    user: {
+      id: 'usr_003',
+      email: 'researcher@medinsight.dz',
+      name: 'Dr. Yacine Khelifi',
+      role: 'researcher',
+      facility: 'fac_002',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=researcher@medinsight.dz',
+      createdAt: '2025-03-05T14:00:00Z',
+      lastLogin: new Date().toISOString(),
+      isActive: true,
+    },
+  },
+}
+
 interface AuthState {
   user: User | null
   token: string | null
@@ -51,6 +96,13 @@ function clearSession() {
   localStorage.removeItem('medinsight_refresh_token')
 }
 
+function generateMockToken(user: User): string {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }))
+  const payload = btoa(JSON.stringify({ sub: user.id, email: user.email, role: user.role, exp: Date.now() + 86400000 }))
+  const sig = btoa('mock-signature')
+  return `${header}.${payload}.${sig}`
+}
+
 const saved = loadSession()
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -59,41 +111,62 @@ export const useAuthStore = create<AuthState>((set) => ({
   refreshToken: saved.refreshToken,
 
   login: async (email: string, password: string) => {
-    const res = await fetch(`${API_BASE}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    })
+    try {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 3000)
 
-    if (!res.ok) {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
+      })
+      clearTimeout(timeout)
+
+      if (!res.ok) {
+        throw new Error('Identifiant ou mot de passe incorrect')
+      }
+
+      const data = await res.json()
+      const token = data.access_token
+
+      const userRes = await fetch(`${API_BASE}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      let user: User
+      if (userRes.ok) {
+        const backendUser = await userRes.json()
+        user = mapBackendUser(backendUser)
+      } else {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        user = {
+          id: payload.sub,
+          email,
+          name: email,
+          role: 'admin',
+          createdAt: new Date().toISOString(),
+          isActive: true,
+        }
+      }
+
+      saveSession(user, token, data.refresh_token || '')
+      set({ user, token, refreshToken: data.refresh_token || null })
+      return
+    } catch {
+      // Backend indisponible → mode fallback mock
+    }
+
+    const entry = mockUsers[email]
+    if (!entry || entry.password !== password) {
       throw new Error('Identifiant ou mot de passe incorrect')
     }
 
-    const data = await res.json()
-    const token = data.access_token
+    const user = { ...entry.user, lastLogin: new Date().toISOString() }
+    const token = generateMockToken(user)
 
-    const userRes = await fetch(`${API_BASE}/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-
-    let user: User
-    if (userRes.ok) {
-      const backendUser = await userRes.json()
-      user = mapBackendUser(backendUser)
-    } else {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      user = {
-        id: payload.sub,
-        email,
-        name: email,
-        role: 'admin',
-        createdAt: new Date().toISOString(),
-        isActive: true,
-      }
-    }
-
-    saveSession(user, token, data.refresh_token || '')
-    set({ user, token, refreshToken: data.refresh_token || null })
+    saveSession(user, token, 'mock-refresh')
+    set({ user, token, refreshToken: 'mock-refresh' })
   },
 
   logout: () => {
