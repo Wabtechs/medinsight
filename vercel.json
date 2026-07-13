@@ -1,23 +1,6 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite",
+  "framework": "nextjs",
   "installCommand": "npm install",
-  "functions": {
-    "api/index.py": {
-      "runtime": "@vercel/python@6.49.0",
-      "maxDuration": 30,
-      "includeFiles": "backend/**"
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api"
-    },
-    {
-      "source": "/health",
-      "destination": "/api"
-    }
-  ]
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next"
 }

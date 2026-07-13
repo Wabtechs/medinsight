@@ -1,12 +1,2 @@
-import { Providers } from './providers'
-import { AppRouter } from '@/routes'
-import { Toaster } from '@/components/ui/toaster'
-
-export default function App() {
-  return (
-    <Providers>
-      <AppRouter />
-      <Toaster />
-    </Providers>
-  )
-}
+// Legacy Vite entry point - kept for reference, not used by Next.js App Router
+// The actual app entry is now src/app/layout.tsx + src/app/page.tsx

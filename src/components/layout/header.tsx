@@ -1,10 +1,12 @@
-import { useNavigate } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { Logo } from "@/components/ui/logo";
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Separator } from '@/components/ui/separator'
+import { Logo } from '@/components/ui/logo'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,16 +15,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from '@/components/ui/dropdown-menu'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useMemo } from "react";
-import { useAppStore } from "@/store";
-import { useAuthStore } from "@/store/auth-store";
+} from '@/components/ui/tooltip'
+import { useMemo } from 'react'
+import { useAppStore } from '@/store'
+import { useAuthStore } from '@/store/auth-store'
 import {
   Menu,
   Search,
@@ -33,25 +35,24 @@ import {
   LogOut,
   User,
   Settings,
-} from "lucide-react";
+} from 'lucide-react'
 
 export function Header() {
-  const navigate = useNavigate();
+  const router = useRouter()
   const { sidebarOpen, toggleSidebar, darkMode, toggleDarkMode, setCommandPaletteOpen, notifications } =
-    useAppStore();
-  const { user, logout } = useAuthStore();
+    useAppStore()
+  const { user, logout } = useAuthStore()
 
-  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications])
 
   return (
     <header
       className={cn(
-        "fixed right-0 top-0 z-50 flex h-16 items-center border-b border-border bg-card/80 backdrop-blur-xl",
-        "left-0 transition-all duration-300",
-        sidebarOpen ? "lg:left-[280px]" : "lg:left-[72px]"
+        'fixed right-0 top-0 z-50 flex h-16 items-center border-b border-border bg-card/80 backdrop-blur-xl',
+        'left-0 transition-all duration-300',
+        sidebarOpen ? 'lg:left-[280px]' : 'lg:left-[72px]'
       )}
     >
-      {/* Left */}
       <div className="flex items-center gap-3 px-4">
         <Button
           variant="ghost"
@@ -68,7 +69,6 @@ export function Header() {
         </div>
       </div>
 
-      {/* Center — Command Palette Trigger */}
       <div className="mx-auto hidden md:block">
         <button
           onClick={() => setCommandPaletteOpen(true)}
@@ -82,10 +82,8 @@ export function Header() {
         </button>
       </div>
 
-      {/* Right */}
       <div className="ml-auto flex items-center gap-1 px-4">
         <TooltipProvider>
-          {/* Notifications */}
           <DropdownMenu>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -116,39 +114,23 @@ export function Header() {
               <DropdownMenuSeparator />
               <div className="max-h-72 overflow-y-auto">
                 {[
-                  {
-                    id: 1,
-                    title: "Nouveau cas clinique ajouté",
-                    time: "Il y a 5 min",
-                  },
-                  {
-                    id: 2,
-                    title: "Rapport mensuel disponible",
-                    time: "Il y a 1 h",
-                  },
-                  {
-                    id: 3,
-                    title: "Synchronisation terminée",
-                    time: "Il y a 3 h",
-                  },
+                  { id: 1, title: 'Nouveau cas clinique ajouté', time: 'Il y a 5 min' },
+                  { id: 2, title: 'Rapport mensuel disponible', time: 'Il y a 1 h' },
+                  { id: 3, title: 'Synchronisation terminée', time: 'Il y a 3 h' },
                 ].map((notification) => (
                   <DropdownMenuItem
                     key={notification.id}
                     className="flex flex-col items-start gap-1 py-3"
                   >
-                    <span className="text-sm font-medium text-foreground">
-                      {notification.title}
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      {notification.time}
-                    </span>
+                    <span className="text-sm font-medium text-foreground">{notification.title}</span>
+                    <span className="text-xs text-muted-foreground">{notification.time}</span>
                   </DropdownMenuItem>
                 ))}
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="justify-center text-sm text-primary"
-                onClick={() => navigate("/app/notifications")}
+                onClick={() => router.push('/app/notifications')}
               >
                 Voir toutes les notifications
               </DropdownMenuItem>
@@ -156,7 +138,6 @@ export function Header() {
           </DropdownMenu>
         </TooltipProvider>
 
-        {/* Dark mode toggle */}
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -166,22 +147,15 @@ export function Header() {
                 className="h-9 w-9 text-muted-foreground hover:text-foreground"
                 onClick={toggleDarkMode}
               >
-                {darkMode ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
+                {darkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              {darkMode ? "Mode clair" : "Mode sombre"}
-            </TooltipContent>
+            <TooltipContent>{darkMode ? 'Mode clair' : 'Mode sombre'}</TooltipContent>
           </Tooltip>
         </TooltipProvider>
 
         <Separator orientation="vertical" className="mx-1 h-6" />
 
-        {/* User Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -191,7 +165,7 @@ export function Header() {
               <Avatar className="h-7 w-7">
                 <AvatarImage src={user?.avatar} alt={user?.name} />
                 <AvatarFallback className="bg-primary/10 text-primary text-[11px] font-semibold">
-                  {user?.name?.charAt(0)?.toUpperCase() ?? "U"}
+                  {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
                 </AvatarFallback>
               </Avatar>
               <ChevronDown className="h-3.5 w-3.5" />
@@ -199,29 +173,22 @@ export function Header() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
-              <p className="text-sm font-medium text-foreground">
-                {user?.name ?? "Utilisateur"}
-              </p>
-              <p className="text-xs font-normal text-muted-foreground">
-                {user?.email ?? "email@medinsight.fr"}
-              </p>
+              <p className="text-sm font-medium text-foreground">{user?.name ?? 'Utilisateur'}</p>
+              <p className="text-xs font-normal text-muted-foreground">{user?.email ?? 'email@medinsight.fr'}</p>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => navigate("/app/profile")}>
+              <DropdownMenuItem onClick={() => router.push('/app/profile')}>
                 <User className="mr-2 h-4 w-4" />
                 Mon profil
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/app/settings")}>
+              <DropdownMenuItem onClick={() => router.push('/app/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 Paramètres
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={logout}
-              className="text-destructive focus:text-destructive"
-            >
+            <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
               Déconnexion
             </DropdownMenuItem>
@@ -229,7 +196,7 @@ export function Header() {
         </DropdownMenu>
       </div>
     </header>
-  );
+  )
 }
 
-export default Header;
+export default Header

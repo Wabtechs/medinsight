@@ -1,5 +1,6 @@
+'use client'
+
 import { useEffect } from "react";
-import { Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "./sidebar";
 import { Header } from "./header";
@@ -10,7 +11,7 @@ import {
   SheetContent,
 } from "@/components/ui/sheet";
 
-export function Layout() {
+export function Layout({ children }: { children: React.ReactNode }) {
   const { sidebarOpen, toggleSidebar } = useAppStore();
 
   return (
@@ -40,7 +41,7 @@ export function Layout() {
         )}
       >
         <div className="p-6">
-          <Outlet />
+          {children}
         </div>
       </main>
 

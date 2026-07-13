@@ -1,18 +1,21 @@
-import { NavLink } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
-import { Logo } from "@/components/ui/logo";
+'use client'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Separator } from '@/components/ui/separator'
+import { Logo } from '@/components/ui/logo'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { useAppStore } from "@/store";
-import { useAuthStore } from "@/store/auth-store";
+} from '@/components/ui/tooltip'
+import { useAppStore } from '@/store'
+import { useAuthStore } from '@/store/auth-store'
 import {
   LayoutDashboard,
   Building2,
@@ -26,75 +29,112 @@ import {
   Settings,
   Shield,
   LogOut,
-} from "lucide-react";
+} from 'lucide-react'
 
 interface NavItem {
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  href: string;
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  href: string
 }
 
 interface NavSection {
-  label: string;
-  items: NavItem[];
+  label: string
+  items: NavItem[]
 }
 
 const navSections: NavSection[] = [
   {
-    label: "PRINCIPAL",
+    label: 'PRINCIPAL',
     items: [
-      { label: "Dashboard", icon: LayoutDashboard, href: "/app" },
-      { label: "Établissements", icon: Building2, href: "/app/facilities" },
-      { label: "Utilisateurs", icon: Users, href: "/app/users" },
-      { label: "Patients", icon: UserRound, href: "/app/patients" },
+      { label: 'Dashboard', icon: LayoutDashboard, href: '/app' },
+      { label: 'Établissements', icon: Building2, href: '/app/facilities' },
+      { label: 'Utilisateurs', icon: Users, href: '/app/users' },
+      { label: 'Patients', icon: UserRound, href: '/app/patients' },
     ],
   },
   {
-    label: "CLINIQUE",
+    label: 'CLINIQUE',
     items: [
-      { label: "Cas Cliniques", icon: FolderOpen, href: "/app/clinical-cases" },
-      {
-        label: "Historique des Traitements",
-        icon: ClipboardList,
-        href: "/app/treatment-history",
-      },
+      { label: 'Cas Cliniques', icon: FolderOpen, href: '/app/clinical-cases' },
+      { label: 'Historique des Traitements', icon: ClipboardList, href: '/app/treatment-history' },
     ],
   },
   {
-    label: "ANALYTIQUE",
+    label: 'ANALYTIQUE',
     items: [
-      {
-        label: "Statistiques",
-        icon: BarChart3,
-        href: "/app/analytics",
-      },
-      { label: "Chercheurs", icon: FlaskConical, href: "/app/research" },
+      { label: 'Statistiques', icon: BarChart3, href: '/app/analytics' },
+      { label: 'Chercheurs', icon: FlaskConical, href: '/app/research' },
     ],
   },
   {
-    label: "SYSTÈME",
+    label: 'SYSTÈME',
     items: [
-      { label: "Synchronisation", icon: RefreshCw, href: "/app/sync" },
-      { label: "Paramètres", icon: Settings, href: "/app/settings" },
-      { label: "Journal d'Audit", icon: Shield, href: "/app/audit" },
+      { label: 'Synchronisation', icon: RefreshCw, href: '/app/sync' },
+      { label: 'Paramètres', icon: Settings, href: '/app/settings' },
+      { label: 'Journal d\'Audit', icon: Shield, href: '/app/audit' },
     ],
   },
-];
+]
+
+function NavItemLink({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
+  const pathname = usePathname()
+  const isActive = item.href === '/app'
+    ? pathname === '/app'
+    : pathname.startsWith(item.href)
+
+  const linkContent = (
+    <>
+      <item.icon className="h-5 w-5 shrink-0" />
+      {!collapsed && <span className="truncate">{item.label}</span>}
+    </>
+  )
+
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Link
+            href={item.href}
+            className={cn(
+              'flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+              isActive && 'bg-primary/10 text-primary hover:bg-primary/15'
+            )}
+          >
+            <item.icon className="h-5 w-5" />
+          </Link>
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8}>
+          {item.label}
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return (
+    <Link
+      href={item.href}
+      className={cn(
+        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground',
+        isActive && 'bg-accent text-primary hover:bg-accent'
+      )}
+    >
+      {linkContent}
+    </Link>
+  )
+}
 
 export function Sidebar() {
-  const { sidebarOpen } = useAppStore();
-  const { user, logout } = useAuthStore();
-
-  const collapsed = !sidebarOpen;
+  const { sidebarOpen } = useAppStore()
+  const { user, logout } = useAuthStore()
+  const collapsed = !sidebarOpen
 
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-border bg-card transition-all duration-300",
-        collapsed ? "w-[72px]" : "w-[280px]"
+        'fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-border bg-card transition-all duration-300',
+        collapsed ? 'w-[72px]' : 'w-[280px]'
       )}
     >
-      {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b border-border px-4">
         <Logo className="h-7 w-7 shrink-0" />
         {!collapsed && (
@@ -104,7 +144,6 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Navigation */}
       <ScrollArea className="flex-1 py-4">
         <TooltipProvider delayDuration={0}>
           <nav className="space-y-6 px-3">
@@ -118,41 +157,7 @@ export function Sidebar() {
                 <ul className="space-y-1">
                   {section.items.map((item) => (
                     <li key={item.href}>
-                      {collapsed ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <NavLink
-                              to={item.href}
-                              className={({ isActive }) =>
-                                cn(
-                                  "flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
-                                  isActive &&
-                                    "bg-primary/10 text-primary hover:bg-primary/15"
-                                )
-                              }
-                            >
-                              <item.icon className="h-5 w-5" />
-                            </NavLink>
-                          </TooltipTrigger>
-                          <TooltipContent side="right" sideOffset={8}>
-                            {item.label}
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <NavLink
-                          to={item.href}
-                          className={({ isActive }) =>
-                            cn(
-                              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
-                              isActive &&
-                                "bg-accent text-primary hover:bg-accent"
-                            )
-                          }
-                        >
-                          <item.icon className="h-5 w-5 shrink-0" />
-                          <span className="truncate">{item.label}</span>
-                        </NavLink>
-                      )}
+                      <NavItemLink item={item} collapsed={collapsed} />
                     </li>
                   ))}
                 </ul>
@@ -164,7 +169,6 @@ export function Sidebar() {
 
       <Separator />
 
-      {/* User Info */}
       <div className="p-3">
         {collapsed ? (
           <Tooltip>
@@ -178,16 +182,14 @@ export function Sidebar() {
                 <Avatar className="h-8 w-8">
                   <AvatarImage src={user?.avatar} alt={user?.name} />
                   <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                    {user?.name?.charAt(0)?.toUpperCase() ?? "U"}
+                    {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
                   </AvatarFallback>
                 </Avatar>
               </Button>
             </TooltipTrigger>
             <TooltipContent side="right" sideOffset={8}>
-              <p className="font-medium">{user?.name ?? "Utilisateur"}</p>
-              <p className="text-xs text-muted-foreground">
-                {user?.role ?? "Rôle"}
-              </p>
+              <p className="font-medium">{user?.name ?? 'Utilisateur'}</p>
+              <p className="text-xs text-muted-foreground">{user?.role ?? 'Rôle'}</p>
             </TooltipContent>
           </Tooltip>
         ) : (
@@ -195,16 +197,12 @@ export function Sidebar() {
             <Avatar className="h-9 w-9 shrink-0">
               <AvatarImage src={user?.avatar} alt={user?.name} />
               <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                {user?.name?.charAt(0)?.toUpperCase() ?? "U"}
+                {user?.name?.charAt(0)?.toUpperCase() ?? 'U'}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 overflow-hidden">
-              <p className="truncate text-sm font-medium text-foreground">
-                {user?.name ?? "Utilisateur"}
-              </p>
-              <p className="truncate text-xs text-muted-foreground">
-                {user?.role ?? "Rôle"}
-              </p>
+              <p className="truncate text-sm font-medium text-foreground">{user?.name ?? 'Utilisateur'}</p>
+              <p className="truncate text-xs text-muted-foreground">{user?.role ?? 'Rôle'}</p>
             </div>
             <Button
               variant="ghost"
@@ -218,7 +216,7 @@ export function Sidebar() {
         )}
       </div>
     </aside>
-  );
+  )
 }
 
-export default Sidebar;
+export default Sidebar

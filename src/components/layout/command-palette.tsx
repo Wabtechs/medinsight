@@ -1,5 +1,7 @@
+'use client'
+
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 import { Command } from "cmdk";
 import { useAppStore } from "@/store";
 import { toast } from "@/hooks/use-toast";
@@ -86,7 +88,7 @@ const actionItems: CommandItem[] = [
 ];
 
 export function CommandPalette() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { commandPaletteOpen, setCommandPaletteOpen } = useAppStore();
 
   // Listen for Cmd+K / Ctrl+K
@@ -108,7 +110,7 @@ export function CommandPalette() {
   const handleSelect = (href?: string, label?: string) => {
     setCommandPaletteOpen(false);
     if (href) {
-      navigate(href);
+      router.push(href);
     } else if (label) {
       toast({ title: label, description: "Cette fonctionnalité sera bientôt disponible." });
     }

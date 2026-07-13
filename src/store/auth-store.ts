@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import type { User } from '@/types'
 
-const isDev = import.meta.env.DEV
-const API_BASE = import.meta.env.VITE_API_URL || (isDev ? 'http://localhost:8000/api/v1' : '/api/v1')
+const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || (isDev ? 'http://localhost:8000/api/v1' : '/api/v1')
 
 const mockUsers: Record<string, { password: string; user: User }> = {
   'admin@medinsight.dz': {
