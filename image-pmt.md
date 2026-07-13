@@ -46,3 +46,5 @@ A warm, modern flat illustration of a diverse medical team collaborating around 
 3. Update `src/pages/landing/index.tsx` to use `<img>` tags instead of `<ImagePlaceholder>`
 4. Ensure images are optimized (< 200KB each) for fast loading
 5. Test on both desktop and mobile viewports
+
+
