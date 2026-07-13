@@ -22,12 +22,52 @@ function toCamelCase(key: string): string {
   return key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
 }
 
+const OUTCOME_MAP: Record<string, string> = {
+  PENDING: 'active',
+  IN_PROGRESS: 'active',
+  SUCCESS: 'resolved',
+  FAILURE: 'archived',
+};
+
 function transformKeys(obj: unknown): unknown {
   if (Array.isArray(obj)) return obj.map(transformKeys);
   if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
-    return Object.fromEntries(
-      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [toCamelCase(k), transformKeys(v)])
-    );
+    const entries = Object.entries(obj as Record<string, unknown>).map(([k, v]) => {
+      let key = toCamelCase(k);
+      let val = transformKeys(v);
+
+      if (key === 'symptomsJson' && val && typeof val === 'object') {
+        const d = val as Record<string, unknown>;
+        val = d.description ? String(d.description).split(',').map((s: string) => s.trim()) : [];
+        key = 'symptoms';
+      }
+      if (key === 'provisionalDiagnosis') { key = 'diagnosis'; }
+      if (key === 'outcomeStatus') {
+        val = OUTCOME_MAP[String(val)] || 'active';
+        key = 'status';
+      }
+      if (key === 'doctorId') { key = 'assignedDoctorId'; }
+      if (key === 'tagsJson' && val && typeof val === 'object') {
+        const d = val as Record<string, unknown>;
+        val = Array.isArray(d.tags) ? d.tags : [];
+        key = 'tags';
+      }
+
+      return [key, val] as const;
+    });
+
+    const result: Record<string, unknown> = {};
+    for (const [k, v] of entries) {
+      result[k] = v;
+    }
+
+    if (!result.title && result.diagnosis) { result.title = result.diagnosis; }
+    if (!result.description && result.diagnosis) { result.description = result.diagnosis; }
+    if (!result.priority) { result.priority = 'medium'; }
+    if (!Array.isArray(result.symptoms)) { result.symptoms = []; }
+    if (!Array.isArray(result.tags)) { result.tags = []; }
+
+    return result;
   }
   return obj;
 }

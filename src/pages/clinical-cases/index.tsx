@@ -490,15 +490,15 @@ export default function ClinicalCasesPage() {
                 </CardContent>
                 <CardFooter className="pt-0">
                   <div className="flex w-full flex-col gap-2">
-                    {c.tags.length > 0 && (
+                    {c.tags?.length > 0 && (
                       <div className="flex flex-wrap gap-1">
-                        {c.tags.slice(0, 3).map((tag) => (
+                        {c.tags?.slice(0, 3).map((tag) => (
                           <Badge key={tag} variant="secondary" className="text-[10px]">
                             <Tag className="mr-1 h-2.5 w-2.5" />
                             {tag}
                           </Badge>
                         ))}
-                        {c.tags.length > 3 && (
+                        {c.tags && c.tags.length > 3 && (
                           <Badge variant="secondary" className="text-[10px]">
                             +{c.tags.length - 3}
                           </Badge>
