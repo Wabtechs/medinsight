@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { HeartPulse, Mail, ArrowLeft } from 'lucide-react'
+import { Mail, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
+import { Logo } from '@/components/ui/logo'
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('')
@@ -36,9 +37,7 @@ export default function ForgotPassword() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md space-y-8">
         <div className="flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-            <HeartPulse className="h-6 w-6 text-white" />
-          </div>
+          <Logo className="h-12 w-12 rounded-xl" />
           <h1 className="text-2xl font-bold text-primary">MedInsight</h1>
         </div>
 

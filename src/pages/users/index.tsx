@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useToast } from '@/hooks/use-toast'
 import {
   Search,
   Plus,
@@ -74,6 +75,7 @@ function SortIcon({ field, sortField, sortDir }: { field: SortField; sortField: 
 }
 
 export default function Users() {
+  const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -441,7 +443,12 @@ export default function Users() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => toast({ title: "Bientôt disponible", description: "Les actions sur les utilisateurs seront disponibles prochainement" })}
+                      >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </TableCell>

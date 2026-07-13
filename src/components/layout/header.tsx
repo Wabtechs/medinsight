@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Logo } from "@/components/ui/logo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useMemo } from "react";
 import { useAppStore } from "@/store";
 import { useAuthStore } from "@/store/auth-store";
 import {
@@ -35,16 +37,16 @@ import {
 
 export function Header() {
   const navigate = useNavigate();
-  const { sidebarOpen, toggleSidebar, darkMode, toggleDarkMode, setCommandPaletteOpen } =
+  const { sidebarOpen, toggleSidebar, darkMode, toggleDarkMode, setCommandPaletteOpen, notifications } =
     useAppStore();
   const { user, logout } = useAuthStore();
 
-  const unreadCount = 3;
+  const unreadCount = useMemo(() => notifications.filter((n) => !n.read).length, [notifications]);
 
   return (
     <header
       className={cn(
-        "fixed right-0 top-0 z-50 flex h-16 items-center border-b border-border bg-white/80 backdrop-blur-xl dark:bg-slate-900/80",
+        "fixed right-0 top-0 z-50 flex h-16 items-center border-b border-border bg-card/80 backdrop-blur-xl",
         "left-0 transition-all duration-300",
         sidebarOpen ? "lg:left-[280px]" : "lg:left-[72px]"
       )}
@@ -60,9 +62,10 @@ export function Header() {
           <Menu className="h-5 w-5" />
         </Button>
         <Separator orientation="vertical" className="h-6" />
-        <h1 className="hidden text-sm font-semibold text-foreground sm:block">
-          MedInsight
-        </h1>
+        <div className="hidden items-center gap-2 sm:flex">
+          <Logo className="h-6 w-6" />
+          <h1 className="text-sm font-semibold text-foreground">MedInsight</h1>
+        </div>
       </div>
 
       {/* Center — Command Palette Trigger */}

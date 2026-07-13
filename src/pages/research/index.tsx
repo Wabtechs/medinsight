@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { mockClinicalCases, mockChartData } from "@/lib/mock-data";
 import { useAuthStore } from "@/store/auth-store";
+import { useToast } from "@/hooks/use-toast";
 import { RechartsChart } from "@/components/charts/recharts-chart";
 import {
   FlaskConical,
@@ -17,7 +18,6 @@ import {
   Search,
   ArrowUpRight,
 } from "lucide-react";
-import { Link } from "react-router-dom";
 
 const recentAnalyses = [
   {
@@ -103,6 +103,7 @@ const typeColor: Record<string, string> = {
 
 export default function ResearchPage() {
   const { user } = useAuthStore();
+  const { toast } = useToast();
 
   return (
     <div className="space-y-6">
@@ -197,17 +198,15 @@ export default function ResearchPage() {
           <CardDescription>Accédez rapidement aux fonctionnalités principales</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
-          <Button asChild>
-            <Link to="/research/new-study">
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle Étude
-            </Link>
+          <Button onClick={() => toast({ title: "Nouvelle étude", description: "La création d'étude sera bientôt disponible." })}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvelle Étude
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => toast({ title: "Export en cours...", description: "Le fichier sera bientôt disponible." })}>
             <Download className="mr-2 h-4 w-4" />
             Exporter Données
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => toast({ title: "Génération en cours...", description: "Le rapport sera bientôt disponible." })}>
             <FileText className="mr-2 h-4 w-4" />
             Générer Rapport
           </Button>
@@ -292,7 +291,12 @@ export default function ResearchPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button variant="ghost" size="sm" className="ml-auto">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto"
+                  onClick={() => toast({ title: "Bientôt disponible", description: "La vue détaillée des études sera disponible prochainement" })}
+                >
                   Voir détails
                   <ArrowUpRight className="ml-1 h-3 w-3" />
                 </Button>

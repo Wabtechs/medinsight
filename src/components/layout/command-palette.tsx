@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Command } from "cmdk";
-import { cn } from "@/lib/utils";
 import { useAppStore } from "@/store";
+import { toast } from "@/hooks/use-toast";
 import {
   LayoutDashboard,
   Users,
@@ -105,10 +105,12 @@ export function CommandPalette() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [commandPaletteOpen, setCommandPaletteOpen]);
 
-  const handleSelect = (href?: string) => {
+  const handleSelect = (href?: string, label?: string) => {
     setCommandPaletteOpen(false);
     if (href) {
       navigate(href);
+    } else if (label) {
+      toast({ title: label, description: "Cette fonctionnalité sera bientôt disponible." });
     }
   };
 
@@ -125,10 +127,7 @@ export function CommandPalette() {
       {/* Dialog */}
       <div className="absolute left-1/2 top-[20%] w-full max-w-lg -translate-x-1/2 px-4">
         <Command
-          className={cn(
-            "overflow-hidden rounded-xl border border-border bg-card shadow-2xl",
-            "dark:bg-slate-900"
-          )}
+          className="overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
         >
           {/* Search Input */}
           <div className="flex items-center border-b border-border px-4">
@@ -177,7 +176,7 @@ export function CommandPalette() {
                 <Command.Item
                   key={item.label}
                   value={item.label}
-                  onSelect={() => handleSelect(item.href)}
+                  onSelect={() => handleSelect(item.href, !item.href ? item.label : undefined)}
                   className="flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-foreground transition-colors data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground"
                 >
                   <item.icon className="h-4 w-4 shrink-0 text-muted-foreground" />

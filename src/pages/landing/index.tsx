@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
+import { Logo } from '@/components/ui/logo'
 import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -124,6 +126,7 @@ const checklist = [
 ]
 
 export default function LandingPage() {
+  const { toast } = useToast()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -139,13 +142,13 @@ export default function LandingPage() {
       <header
         className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
           scrolled
-            ? 'border-b border-border bg-white/80 shadow-sm backdrop-blur-xl dark:bg-slate-900/80'
+            ? 'border-b border-border bg-card/80 shadow-sm backdrop-blur-xl'
             : 'bg-transparent'
         }`}
       >
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="MedInsight" className="h-7 w-7 object-contain" />
+            <Logo className="h-7 w-7" />
             <span className="text-lg font-bold text-foreground">MedInsight</span>
           </Link>
 
@@ -184,7 +187,7 @@ export default function LandingPage() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="border-t border-border bg-white/95 backdrop-blur-xl dark:bg-slate-900/95 md:hidden">
+          <div className="border-t border-border bg-card/95 backdrop-blur-xl md:hidden">
             <div className="space-y-1 px-4 py-4">
               <a href="#features" className="block py-2 text-sm font-medium text-muted-foreground" onClick={() => setMobileMenuOpen(false)}>
                 Fonctionnalités
@@ -474,6 +477,10 @@ export default function LandingPage() {
               size="lg"
               variant="outline"
               className="border-white/30 text-white hover:bg-white/10"
+              onClick={() => {
+                navigator.clipboard.writeText("contact@medinsight.dz")
+                toast({ title: "Email copié", description: "contact@medinsight.dz a été copié dans le presse-papier" })
+              }}
             >
               <Mail className="mr-2 h-4 w-4" />
               Contactez l'Équipe
@@ -489,7 +496,7 @@ export default function LandingPage() {
             {/* Brand */}
             <div>
               <div className="mb-4 flex items-center gap-2">
-                <img src="/logo.png" alt="MedInsight" className="h-6 w-6 object-contain" />
+                <Logo variant="dark" className="h-6 w-6" />
                 <span className="text-lg font-bold text-white">MedInsight</span>
               </div>
               <p className="mb-4 text-sm leading-relaxed text-white/50">
@@ -497,7 +504,7 @@ export default function LandingPage() {
                 sécurisée et conforme aux normes de santé.
               </p>
               <div className="flex gap-3">
-                <img src="/logo.png" alt="MedInsight" className="h-10 w-auto rounded bg-white/10 p-1" />
+                <Logo variant="dark" className="h-10 w-auto rounded bg-white/10 p-1" />
               </div>
             </div>
 

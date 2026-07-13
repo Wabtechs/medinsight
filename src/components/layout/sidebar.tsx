@@ -4,6 +4,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Logo } from "@/components/ui/logo";
 import {
   Tooltip,
   TooltipContent,
@@ -89,13 +90,13 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-border bg-card transition-all duration-300 dark:bg-slate-900",
+        "fixed left-0 top-0 z-40 flex h-screen flex-col border-r border-border bg-card transition-all duration-300",
         collapsed ? "w-[72px]" : "w-[280px]"
       )}
     >
       {/* Logo */}
       <div className="flex h-16 items-center gap-2 border-b border-border px-4">
-        <img src="/logo.png" alt="MedInsight" className="h-7 w-7 shrink-0 object-contain" />
+        <Logo className="h-7 w-7 shrink-0" />
         {!collapsed && (
           <span className="text-lg font-bold tracking-tight text-foreground">
             MedInsight

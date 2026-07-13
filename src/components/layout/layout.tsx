@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "./sidebar";
@@ -7,11 +8,10 @@ import { useAppStore } from "@/store";
 import {
   Sheet,
   SheetContent,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 
 export function Layout() {
-  const { sidebarOpen } = useAppStore();
+  const { sidebarOpen, toggleSidebar } = useAppStore();
 
   return (
     <div className="relative min-h-screen bg-background">
@@ -22,10 +22,7 @@ export function Layout() {
 
       {/* Mobile Sidebar (Sheet overlay) */}
       <div className="lg:hidden">
-        <Sheet>
-          <SheetTrigger asChild>
-            <div className="fixed left-0 top-0 z-40 h-0 w-0" />
-          </SheetTrigger>
+        <Sheet open={sidebarOpen} onOpenChange={toggleSidebar}>
           <SheetContent side="left" className="w-[280px] p-0">
             <Sidebar />
           </SheetContent>

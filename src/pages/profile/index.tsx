@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { useAuthStore } from "@/store/auth-store";
+import { useAppStore } from "@/store";
 import {
   User,
   Building2,
@@ -103,7 +105,7 @@ const roleBadge: Record<string, string> = {
 };
 
 function timeAgo(dateStr: string): string {
-  const now = new Date("2026-07-12T12:00:00");
+  const now = new Date();
   const date = new Date(dateStr);
   const diffMs = now.getTime() - date.getTime();
   const diffMin = Math.floor(diffMs / 60000);
@@ -117,7 +119,9 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function ProfilePage() {
+  const { toast } = useToast();
   const { user } = useAuthStore();
+  const { darkMode, toggleDarkMode } = useAppStore();
 
   const [name, setName] = useState(user?.name ?? "Dr. Amira Benali");
   const [email, setEmail] = useState(user?.email ?? "amira.benali@medinsight.dz");
@@ -127,7 +131,6 @@ export default function ProfilePage() {
   const [prefLanguage, setPrefLanguage] = useState("fr");
   const [prefTimezone, setPrefTimezone] = useState("Africa/Algiers");
   const [emailNotif, setEmailNotif] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState("25");
 
   const [saved, setSaved] = useState(false);
@@ -171,7 +174,10 @@ export default function ProfilePage() {
                 <AvatarImage src={user?.avatar} alt={displayName} />
                 <AvatarFallback className="text-lg">{initials}</AvatarFallback>
               </Avatar>
-              <button className="absolute bottom-0 right-0 rounded-full border bg-background p-1 shadow-sm hover:bg-accent">
+              <button
+                className="absolute bottom-0 right-0 rounded-full border bg-background p-1 shadow-sm hover:bg-accent"
+                onClick={() => toast({ title: "Bientôt disponible", description: "Le changement d'avatar sera disponible prochainement" })}
+              >
                 <Edit className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -399,7 +405,7 @@ export default function ProfilePage() {
                       Activer le thème sombre pour l'interface
                     </p>
                   </div>
-                  <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+                  <Switch checked={darkMode} onCheckedChange={toggleDarkMode} />
                 </div>
               </div>
             </CardContent>

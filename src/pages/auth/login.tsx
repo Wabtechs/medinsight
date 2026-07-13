@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAuthStore } from '@/store/auth-store'
+import { Logo } from '@/components/ui/logo'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -47,7 +48,7 @@ export default function Login() {
       <div className="hidden w-1/2 bg-primary lg:flex lg:flex-col lg:items-center lg:justify-center">
         <div className="flex flex-col items-center gap-6 px-12 text-center">
           <Link to="/" className="flex flex-col items-center gap-4">
-            <img src="/logo.png" alt="MedInsight" className="h-20 w-20 rounded-2xl bg-white/10 p-3 object-contain" />
+            <Logo className="h-20 w-20 rounded-2xl bg-white/10 p-3" variant="dark" />
             <h1 className="text-4xl font-bold text-white">MedInsight</h1>
           </Link>
           <p className="max-w-md text-lg text-white/80">
@@ -79,7 +80,7 @@ export default function Login() {
       <div className="flex w-full items-center justify-center px-6 py-12 lg:w-1/2">
         <div className="w-full max-w-md space-y-8">
           <div className="flex items-center gap-3 lg:hidden">
-            <img src="/logo.png" alt="MedInsight" className="h-10 w-10 rounded-lg object-contain" />
+            <Logo className="h-10 w-10 rounded-lg" />
             <span className="text-xl font-bold text-primary">MedInsight</span>
           </div>
 

@@ -22,8 +22,10 @@ import {
   Clock,
   Save,
 } from "lucide-react";
+import { useAppStore } from "@/store";
 
 export default function SettingsPage() {
+  const { darkMode, toggleDarkMode } = useAppStore();
   const [platformName, setPlatformName] = useState("MedInsight");
   const [language, setLanguage] = useState("fr");
   const [timezone, setTimezone] = useState("Africa/Algiers");
@@ -40,7 +42,6 @@ export default function SettingsPage() {
   const [twoFactorAuth, setTwoFactorAuth] = useState(false);
   const [sessionTimeout, setSessionTimeout] = useState("30");
 
-  const [darkMode, setDarkMode] = useState(false);
   const [sidebarHover, setSidebarHover] = useState(true);
   const [compactMode, setCompactMode] = useState(false);
 
@@ -317,7 +318,7 @@ export default function SettingsPage() {
                     Activer le thème sombre pour l'interface
                   </p>
                 </div>
-                <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+                <Switch checked={darkMode} onCheckedChange={toggleDarkMode} />
               </div>
 
               <Separator />

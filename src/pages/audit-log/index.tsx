@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useToast } from '@/hooks/use-toast'
 import {
   Search,
   Download,
@@ -124,6 +125,7 @@ function getDateString(dateStr: string): string {
 }
 
 export default function AuditLogPage() {
+  const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [actionFilter, setActionFilter] = useState('all')
   const [userFilter, setUserFilter] = useState('all')
@@ -219,7 +221,7 @@ export default function AuditLogPage() {
               Chronologie
             </Button>
           </div>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => toast({ title: "Export en cours", description: "Le journal d'audit sera exporté en CSV" })}>
             <Download className="mr-2 h-4 w-4" />
             Exporter
           </Button>

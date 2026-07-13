@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from './api';
 
 function getToken(): string {
-  return localStorage.getItem('medinsight-access-token') || '';
+  return localStorage.getItem('medinsight_token') || '';
 }
 
 export function useLogin() {
@@ -20,7 +20,7 @@ export function useMe() {
   return useQuery({
     queryKey: ['auth', 'me'],
     queryFn: () => api.get('/auth/me', getToken()),
-    enabled: !!localStorage.getItem('medinsight-access-token'),
+    enabled: !!localStorage.getItem('medinsight_token'),
     retry: false,
   });
 }
