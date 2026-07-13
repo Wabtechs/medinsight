@@ -1,4 +1,5 @@
-const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
+const isDev = import.meta.env.DEV;
+const API_BASE = import.meta.env.VITE_API_URL || (isDev ? 'http://localhost:8000/api/v1' : '/api/v1');
 
 interface ApiOptions {
   method?: string;

@@ -6,17 +6,19 @@ settings = get_settings()
 
 connect_args = {}
 db_url = settings.DATABASE_URL
-if "neon.tech" in db_url:
+
+if db_url.startswith("sqlite"):
+    connect_args["check_same_thread"] = False
+elif "neon.tech" in db_url:
     connect_args["ssl"] = "require"
     db_url = db_url.split("?")[0]
 
 engine = create_async_engine(
     db_url,
     echo=False,
-    pool_size=5,
-    max_overflow=5,
     pool_pre_ping=True,
     connect_args=connect_args,
+    **({} if db_url.startswith("sqlite") else {"pool_size": 5, "max_overflow": 5}),
 )
 async_session_factory = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
