@@ -18,11 +18,25 @@ function getToken(): string {
   return localStorage.getItem('medinsight_token') || '';
 }
 
+function toCamelCase(key: string): string {
+  return key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+function transformKeys(obj: unknown): unknown {
+  if (Array.isArray(obj)) return obj.map(transformKeys);
+  if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+    return Object.fromEntries(
+      Object.entries(obj as Record<string, unknown>).map(([k, v]) => [toCamelCase(k), transformKeys(v)])
+    );
+  }
+  return obj;
+}
+
 async function fetchWithFallback<T>(endpoint: string, mockData: T): Promise<T> {
   try {
     const token = getToken();
-    const data = await api.get<T>(endpoint, token);
-    return data;
+    const raw = await api.get<unknown>(endpoint, token);
+    return transformKeys(raw) as T;
   } catch {
     return mockData;
   }
@@ -34,17 +48,16 @@ export function useDashboardData() {
     queryFn: async () => {
       try {
         const token = getToken();
-        const [stats, cases, patients, facilities] = await Promise.all([
-          api.get<{
-            total_cases: number;
-            total_patients: number;
-            total_facilities: number;
-            resolution_rate: number;
-          }>('/clinical-cases/stats', token).catch(() => null),
-          api.get<{ items: ClinicalCase[]; total: number }>('/clinical-cases?page=1&size=5', token).catch(() => null),
-          api.get<{ total: number }>('/patients', token).catch(() => null),
-          api.get<{ total: number }>('/facilities', token).catch(() => null),
+        const [rawStats, rawCases, rawPatients, rawFacilities] = await Promise.all([
+          api.get<unknown>('/clinical-cases/stats', token).catch(() => null),
+          api.get<unknown>('/clinical-cases?page=1&size=5', token).catch(() => null),
+          api.get<unknown>('/patients', token).catch(() => null),
+          api.get<unknown>('/facilities', token).catch(() => null),
         ]);
+        const stats = transformKeys(rawStats) as { total_cases: number; total_patients: number; total_facilities: number; resolution_rate: number } | null;
+        const cases = transformKeys(rawCases) as { items: ClinicalCase[]; total: number } | null;
+        const patients = transformKeys(rawPatients) as { total: number } | null;
+        const facilities = transformKeys(rawFacilities) as { total: number } | null;
         return {
           stats: stats || {
             total_cases: mockClinicalCases.length,
