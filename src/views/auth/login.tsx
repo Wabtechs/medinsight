@@ -38,7 +38,7 @@ export default function Login() {
     setLoading(true)
     try {
       await login(email, password)
-      router.push('/app')
+      router.push('/dashboard')
     } catch {
       setError('Identifiant ou mot de passe incorrect')
     } finally {
