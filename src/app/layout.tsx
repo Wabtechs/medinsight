@@ -61,16 +61,17 @@ export const metadata: Metadata = {
         width: 1200,
         height: 630,
         alt: 'MedInsight - Plateforme de gestion de cas cliniques médicaux',
-        type: 'image/png',
+        type: 'image/webp',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
+    site: '@medinsight',
+    creator: '@medinsight',
     title: TITLE,
     description: DESCRIPTION,
     images: [OG_IMAGE],
-    creator: '@medinsight',
   },
   manifest: '/manifest.json',
   icons: {
@@ -125,6 +126,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" href="/icon-192.png" type="image/png" sizes="192x192" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+        <link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt" />
+        <link rel="alternate" hrefLang="fr" href={SITE_URL} />
+        <link rel="dns-prefetch" href="https://neon.tech" />
+        <link rel="preconnect" href="https://neon.tech" crossOrigin="anonymous" />
       </head>
       <body>{children}</body>
     </html>
