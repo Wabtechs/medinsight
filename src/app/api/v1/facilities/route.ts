@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { facilities } from '@/lib/schema'
-import { eq, desc, ilike, and, count } from 'drizzle-orm'
+import { eq, desc, ilike, and, count, sql } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const [created] = await getDb().insert(facilities).values({
       name: body.name,
       code: body.code,
-      facilityType: body.facilityType,
+      facilityType: sql`'${body.facilityType}'::facility_type`,
       address: body.address,
       city: body.city,
       phone: body.phone,

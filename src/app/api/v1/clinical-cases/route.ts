@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { clinicalCases, patients, users, facilities } from '@/lib/schema'
-import { eq, desc, ilike, and, or, count } from 'drizzle-orm'
+import { eq, desc, ilike, and, or, count, sql } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       provisionalDiagnosis: body.provisionalDiagnosis,
       treatment: body.treatment,
       treatmentDuration: body.treatmentDuration,
-      outcomeStatus: body.outcomeStatus || 'PENDING',
+      outcomeStatus: body.outcomeStatus ? sql`'${body.outcomeStatus}'::outcome_status` : sql`'PENDING'::outcome_status`,
       outcomeNotes: body.outcomeNotes,
       priority: body.priority,
       tagsJson: body.tagsJson,

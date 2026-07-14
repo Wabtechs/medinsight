@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/db'
 import { users, facilities } from '@/lib/schema'
-import { eq, desc, ilike, and, or, count } from 'drizzle-orm'
+import { eq, desc, ilike, and, or, count, sql } from 'drizzle-orm'
 import { hashPassword } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
       email: body.email,
       firstname: body.firstname,
       lastname: body.lastname,
-      role: body.role,
+      role: sql`'${body.role}'::user_role`,
       facilityId: body.facilityId || null,
       passwordHash,
     }).returning()
