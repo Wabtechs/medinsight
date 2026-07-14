@@ -97,7 +97,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const [created] = await getDb().insert(clinicalCases).values(body).returning()
+    const [created] = await getDb().insert(clinicalCases).values({
+      patientId: body.patientId,
+      doctorId: body.doctorId || null,
+      facilityId: body.facilityId || null,
+      title: body.title,
+      description: body.description,
+      symptomsJson: body.symptomsJson,
+      provisionalDiagnosis: body.provisionalDiagnosis,
+      treatment: body.treatment,
+      treatmentDuration: body.treatmentDuration,
+      outcomeStatus: body.outcomeStatus || 'PENDING',
+      outcomeNotes: body.outcomeNotes,
+      priority: body.priority,
+      tagsJson: body.tagsJson,
+    }).returning()
 
     return NextResponse.json(created, { status: 201 })
   } catch {

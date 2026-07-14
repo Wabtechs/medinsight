@@ -62,7 +62,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const [created] = await getDb().insert(patients).values(body).returning()
+    const [created] = await getDb().insert(patients).values({
+      patientUuid: body.patientUuid,
+      firstname: body.firstname,
+      lastname: body.lastname,
+      email: body.email,
+      sex: body.sex,
+      dateOfBirth: body.dateOfBirth,
+      bloodGroup: body.bloodGroup,
+      facilityId: body.facilityId || null,
+      allergies: body.allergies,
+      medicalHistory: body.medicalHistory,
+      insuranceNumber: body.insuranceNumber,
+      insuranceProvider: body.insuranceProvider,
+      isSmoker: body.isSmoker,
+      isDrinker: body.isDrinker,
+      heightCm: body.heightCm,
+      weightKg: body.weightKg,
+    }).returning()
 
     return NextResponse.json(created, { status: 201 })
   } catch (e) {

@@ -50,10 +50,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ detail: 'name, code, and facilityType are required' }, { status: 400 })
     }
 
-    const [created] = await getDb().insert(facilities).values(body).returning()
+    const [created] = await getDb().insert(facilities).values({
+      name: body.name,
+      code: body.code,
+      facilityType: body.facilityType,
+      address: body.address,
+      city: body.city,
+      phone: body.phone,
+      email: body.email,
+      bedCount: body.bedCount,
+      departmentCount: body.departmentCount,
+      staffCount: body.staffCount,
+    }).returning()
 
     return NextResponse.json(created, { status: 201 })
-  } catch {
+  } catch (e: unknown) {
+    console.error('POST /facilities error:', e)
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }
