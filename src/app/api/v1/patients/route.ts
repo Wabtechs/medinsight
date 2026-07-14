@@ -37,8 +37,8 @@ export async function GET(request: NextRequest) {
       page,
       size,
     })
-  } catch {
-    return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
+  } catch (e) {
+    return NextResponse.json({ detail: 'Internal server error', message: e instanceof Error ? e.message : String(e) }, { status: 500 })
   }
 }
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const [created] = await getDb().insert(patients).values(body).returning()
 
     return NextResponse.json(created, { status: 201 })
-  } catch {
-    return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
+  } catch (e) {
+    return NextResponse.json({ detail: 'Internal server error', message: e instanceof Error ? e.message : String(e) }, { status: 500 })
   }
 }
