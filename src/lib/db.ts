@@ -5,7 +5,7 @@ import * as schema from './schema'
 let _db: ReturnType<typeof drizzle<typeof schema>> | null = null
 
 function getNeonUrl(): string {
-  const raw = process.env.DATABASE_URL || process.env.POSTGRES_URL || ''
+  const raw = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL || ''
   return raw.replace(/[&?]channel_binding=require/g, '').replace(/[&?]sslmode=[^&]*/g, '&sslmode=require')
 }
 
