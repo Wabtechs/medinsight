@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
 
     const rows = await sql`
       INSERT INTO users (email, firstname, lastname, role, facility_id, password_hash)
-      VALUES (${body.email}, ${body.firstname}, ${body.lastname}, ${body.role}::user_role, ${body.facilityId || null}, ${passwordHash})
+      VALUES (${body.email}, ${body.firstname}, ${body.lastname}, ${body.role}, ${body.facilityId || null}, ${passwordHash})
       RETURNING id, facility_id, firstname, lastname, email, role, is_active, created_at, updated_at
     `
 
