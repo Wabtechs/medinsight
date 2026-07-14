@@ -6,7 +6,7 @@ const SITE_NAME = 'MedInsight'
 const TITLE = 'MedInsight - Gestion de Cas Cliniques Médicaux'
 const DESCRIPTION =
   "PWA Offline-First de gestion de cas cliniques pour les hôpitaux et médecins d'Algérie. Documentez, analysez et partagez vos cas en toute sécurité."
-const OG_IMAGE = `${SITE_URL}/og-image.png`
+const OG_IMAGE = 'https://i.ibb.co/zWyNytSq/t-l-chargement.png'
 
 export const viewport: Viewport = {
   themeColor: [
