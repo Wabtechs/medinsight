@@ -84,9 +84,9 @@ async function seed() {
 
   await db.insert(auditLogs).values([
     { userId: insertedUsers[0].id, facilityId: insertedFacilities[0].id, action: 'LOGIN', resource: 'auth', resourceId: insertedUsers[0].id, details: { method: 'password' }, ipAddress: '192.168.1.1' },
-    { userId: insertedUsers[2].id, facilityId: insertedFacilities[0].id, action: 'CREATE', resource: 'clinical_case', entityId: insertedCases[0].id, details: { title: 'Migraine chronique' }, ipAddress: '192.168.1.10' },
-    { userId: insertedUsers[3].id, facilityId: insertedFacilities[0].id, action: 'UPDATE', resource: 'clinical_case', entityId: insertedCases[1].id, details: { field: 'outcome_status', old: 'PENDING', new: 'IN_PROGRESS' }, ipAddress: '192.168.1.15' },
-    { userId: insertedUsers[0].id, facilityId: insertedFacilities[0].id, action: 'CREATE', resource: 'user', entityId: insertedUsers[8].id, details: { name: 'Yacine Khelifi', role: 'RESEARCHER' }, ipAddress: '192.168.1.1' },
+    { userId: insertedUsers[2].id, facilityId: insertedFacilities[0].id, action: 'CREATE', resource: 'clinical_case', resourceId: insertedCases[0].id, details: { title: 'Migraine chronique' }, ipAddress: '192.168.1.10' },
+    { userId: insertedUsers[3].id, facilityId: insertedFacilities[0].id, action: 'UPDATE', resource: 'clinical_case', resourceId: insertedCases[1].id, details: { field: 'outcome_status', old: 'PENDING', new: 'IN_PROGRESS' }, ipAddress: '192.168.1.15' },
+    { userId: insertedUsers[0].id, facilityId: insertedFacilities[0].id, action: 'CREATE', resource: 'user', resourceId: insertedUsers[8].id, details: { name: 'Yacine Khelifi', role: 'RESEARCHER' }, ipAddress: '192.168.1.1' },
     { userId: insertedUsers[2].id, facilityId: insertedFacilities[0].id, action: 'VIEW', resource: 'patient', resourceId: insertedPatients[0].id, details: { name: 'Mohamed Amrani' }, ipAddress: '192.168.1.10' },
   ])
   console.log('Inserted audit logs')

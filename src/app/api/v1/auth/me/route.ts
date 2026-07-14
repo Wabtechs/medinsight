@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
         role: payload.role,
       })
     }
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { facilities } from '@/lib/schema'
-import { eq, desc, ilike, and, count, sql } from 'drizzle-orm'
+import { eq, desc, ilike, and, count } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
       page,
       size,
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const [created] = await db.insert(facilities).values(body).returning()
 
     return NextResponse.json(created, { status: 201 })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }

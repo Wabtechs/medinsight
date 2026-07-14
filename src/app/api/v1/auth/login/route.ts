@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
     // If user came from DB, verify password with bcrypt
     if (!MOCK_USERS.find((m) => m.email === email)) {
-      const valid = await verifyPassword(password, (user as any).passwordHash)
+      const valid = await verifyPassword(password, user && 'passwordHash' in user ? (user as { passwordHash: string }).passwordHash : '')
       if (!valid) {
         return NextResponse.json({ detail: 'Invalid email or password' }, { status: 401 })
       }
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
         role: user.role,
       },
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }

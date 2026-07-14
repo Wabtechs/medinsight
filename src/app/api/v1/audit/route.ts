@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { auditLogs, users } from '@/lib/schema'
-import { eq, desc, and, count } from 'drizzle-orm'
+import { eq, desc, count } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       page,
       size,
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }

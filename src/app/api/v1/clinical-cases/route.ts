@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       page,
       size,
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     const [created] = await db.insert(clinicalCases).values(body).returning()
 
     return NextResponse.json(created, { status: 201 })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }

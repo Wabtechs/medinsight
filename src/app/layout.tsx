@@ -1,7 +1,6 @@
-import type { Metadata } from 'next'
 import '../index.css'
 
-export const metadata: Metadata = {
+export const metadata = {
   title: 'MedInsight - Gestion de Cas Cliniques',
   description: 'PWA de gestion de cas cliniques pour les hopitaux algeriens',
   manifest: '/manifest.json',

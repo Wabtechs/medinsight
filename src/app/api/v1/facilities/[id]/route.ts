@@ -16,7 +16,7 @@ export async function GET(
     }
 
     return NextResponse.json(rows[0])
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }
@@ -40,7 +40,7 @@ export async function PUT(
     }
 
     return NextResponse.json(updated)
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }
@@ -63,7 +63,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ detail: 'Facility deleted' })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }

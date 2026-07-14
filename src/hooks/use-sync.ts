@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { syncEngine } from '@/services/sync-engine';
 import { useOnlineStatus } from './use-online-status';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
 export function useSync() {
   const { isOnline, wasOffline } = useOnlineStatus();

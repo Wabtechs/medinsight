@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { clinicalCases } from '@/lib/schema'
-import { eq, count } from 'drizzle-orm'
+import { count } from 'drizzle-orm'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const rows = await db
       .select({
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(stats)
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }

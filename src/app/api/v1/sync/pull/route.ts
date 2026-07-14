@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(syncQueue.createdAt))
 
     return NextResponse.json({ items })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }

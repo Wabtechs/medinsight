@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       page,
       size,
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }
@@ -67,9 +67,9 @@ export async function POST(request: NextRequest) {
 
     const [created] = await db.insert(users).values(body).returning()
 
-    const { passwordHash, ...safe } = created as any
+    const { passwordHash: _, ...safe } = created as Record<string, unknown>
     return NextResponse.json(safe, { status: 201 })
-  } catch (error) {
+  } catch {
     return NextResponse.json({ detail: 'Internal server error' }, { status: 500 })
   }
 }

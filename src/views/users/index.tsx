@@ -481,7 +481,7 @@ export default function Users() {
                     <TableCell>
                       <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                         <Building2 className="h-3 w-3" />
-                        {facilityMap[user.facility || ''] || facilityMap[user.facilityId || ''] || '—'}
+                        {facilityMap[user.facility || ''] || '—'}
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import {
   Building2,
@@ -57,13 +57,7 @@ export default function Facilities() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [facilities, setFacilities] = useState<Facility[]>([])
-
-  useEffect(() => {
-    if (data?.items) {
-      setFacilities(data.items)
-    }
-  }, [data?.items])
+  const facilities = data?.items ?? []
 
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState<Facility['type']>('hospital')
@@ -98,7 +92,6 @@ export default function Facilities() {
       isActive: true,
       createdAt: new Date().toISOString(),
     }
-    setFacilities((prev) => [...prev, facility])
     setDialogOpen(false)
     setNewName('')
     setNewType('hospital')
