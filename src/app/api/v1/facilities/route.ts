@@ -66,6 +66,6 @@ export async function POST(request: NextRequest) {
   } catch (e: unknown) {
     console.error('POST /facilities error:', e)
     const msg = e instanceof Error ? e.message : String(e)
-    return NextResponse.json({ detail: 'Internal server error', error: msg }, { status: 500 })
+    return NextResponse.json({ detail: 'Internal server error', error: msg, version: 'v4-no-cast' }, { status: 500 })
   }
 }
