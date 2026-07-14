@@ -105,10 +105,11 @@ export async function POST(request: NextRequest) {
     const outcomeVal = body.outcomeStatus || 'PENDING'
     const symptomsStr = body.symptomsJson ? JSON.stringify(body.symptomsJson) : '{}'
     const tagsStr = body.tagsJson ? JSON.stringify(body.tagsJson) : '{}'
+    const id = crypto.randomUUID()
 
     const rows = await sql`
-      INSERT INTO clinical_cases (patient_id, doctor_id, facility_id, title, description, symptoms_json, provisional_diagnosis, treatment, treatment_duration, outcome_status, outcome_notes, priority, tags_json)
-      VALUES (${body.patientId}, ${body.doctorId || null}, ${body.facilityId || null}, ${body.title || null}, ${body.description || null}, ${symptomsStr}::jsonb, ${body.provisionalDiagnosis || null}, ${body.treatment || null}, ${body.treatmentDuration || null}, ${outcomeVal}, ${body.outcomeNotes || null}, ${body.priority || 'medium'}, ${tagsStr}::jsonb)
+      INSERT INTO clinical_cases (id, patient_id, doctor_id, facility_id, title, description, symptoms_json, provisional_diagnosis, treatment, treatment_duration, outcome_status, outcome_notes, priority, tags_json)
+      VALUES (${id}, ${body.patientId}, ${body.doctorId || null}, ${body.facilityId || null}, ${body.title || null}, ${body.description || null}, ${symptomsStr}::jsonb, ${body.provisionalDiagnosis || null}, ${body.treatment || null}, ${body.treatmentDuration || null}, ${outcomeVal}, ${body.outcomeNotes || null}, ${body.priority || 'medium'}, ${tagsStr}::jsonb)
       RETURNING id, facility_id, patient_id, doctor_id, title, description, symptoms_json, provisional_diagnosis, treatment, treatment_duration, outcome_status, outcome_notes, priority, tags_json, is_synced, created_at, updated_at
     `
 

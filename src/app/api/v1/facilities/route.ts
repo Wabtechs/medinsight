@@ -56,9 +56,10 @@ export async function POST(request: NextRequest) {
     }
 
     const sql = getSql()
+    const id = crypto.randomUUID()
     const rows = await sql`
-      INSERT INTO facilities (name, code, facility_type, address, city, phone, email, bed_count)
-      VALUES (${body.name}, ${body.code}, ${body.facilityType}, ${body.address || null}, ${body.city || null}, ${body.phone || null}, ${body.email || null}, ${body.bedCount || 0})
+      INSERT INTO facilities (id, name, code, facility_type, address, city, phone, email, bed_count)
+      VALUES (${id}, ${body.name}, ${body.code}, ${body.facilityType}, ${body.address || null}, ${body.city || null}, ${body.phone || null}, ${body.email || null}, ${body.bedCount || 0})
       RETURNING id, name, code, facility_type, address, city, phone, email, bed_count, department_count, staff_count, is_active, created_at, updated_at
     `
 

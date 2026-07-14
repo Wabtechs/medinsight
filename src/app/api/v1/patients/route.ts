@@ -62,10 +62,11 @@ export async function POST(request: NextRequest) {
 
     const sql = getSql()
     const allergiesStr = body.allergies ? JSON.stringify(body.allergies) : '[]'
+    const id = crypto.randomUUID()
 
     const rows = await sql`
-      INSERT INTO patients (patient_uuid, firstname, lastname, email, sex, date_of_birth, blood_group, facility_id, allergies)
-      VALUES (${patientUuid}, ${body.firstname || null}, ${body.lastname || null}, ${body.email || null}, ${body.sex || null}, ${body.dateOfBirth || null}, ${body.bloodGroup || null}, ${body.facilityId || null}, ${allergiesStr}::jsonb)
+      INSERT INTO patients (id, patient_uuid, firstname, lastname, email, sex, date_of_birth, blood_group, facility_id, allergies)
+      VALUES (${id}, ${patientUuid}, ${body.firstname || null}, ${body.lastname || null}, ${body.email || null}, ${body.sex || null}, ${body.dateOfBirth || null}, ${body.bloodGroup || null}, ${body.facilityId || null}, ${allergiesStr}::jsonb)
       RETURNING id, facility_id, patient_uuid, firstname, lastname, email, sex, date_of_birth, blood_group, is_active, created_at, updated_at
     `
 

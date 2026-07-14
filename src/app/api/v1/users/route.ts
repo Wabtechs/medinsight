@@ -79,10 +79,11 @@ export async function POST(request: NextRequest) {
 
     const passwordHash = await hashPassword(body.password)
     const sql = getSql()
+    const id = crypto.randomUUID()
 
     const rows = await sql`
-      INSERT INTO users (email, firstname, lastname, role, facility_id, password_hash)
-      VALUES (${body.email}, ${body.firstname}, ${body.lastname}, ${body.role}, ${body.facilityId || null}, ${passwordHash})
+      INSERT INTO users (id, email, firstname, lastname, role, facility_id, password_hash)
+      VALUES (${id}, ${body.email}, ${body.firstname}, ${body.lastname}, ${body.role}, ${body.facilityId || null}, ${passwordHash})
       RETURNING id, facility_id, firstname, lastname, email, role, is_active, created_at, updated_at
     `
 
