@@ -1,9 +1,5 @@
-'use client'
+import { DashboardPage } from '@/views/dashboard'
 
-import dynamic from 'next/dynamic'
-
-const Dashboard = dynamic(() => import('@/views/dashboard'), { ssr: false })
-
-export default function DashboardPage() {
-  return <Dashboard />
+export default function Page() {
+  return <DashboardPage />
 }

@@ -1,8 +1,6 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-
-const Facilities = dynamic(() => import('@/views/facilities'), { ssr: false })
+import Facilities from '@/views/facilities'
 
 export default function FacilitiesPage() {
   return <Facilities />

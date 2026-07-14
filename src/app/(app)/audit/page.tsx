@@ -1,8 +1,6 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-
-const AuditLog = dynamic(() => import('@/views/audit-log'), { ssr: false })
+import AuditLog from '@/views/audit-log'
 
 export default function AuditPage() {
   return <AuditLog />

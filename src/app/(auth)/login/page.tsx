@@ -1,9 +1,7 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import { Providers } from '@/app/providers'
-
-const Login = dynamic(() => import('@/views/auth/login'), { ssr: false })
+import Login from '@/views/auth/login'
 
 export default function LoginPage() {
   return (

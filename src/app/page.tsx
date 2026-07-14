@@ -1,9 +1,7 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import { Providers } from './providers'
-
-const Landing = dynamic(() => import('@/views/landing'), { ssr: false })
+import Landing from '@/views/landing'
 
 export default function LandingPage() {
   return (

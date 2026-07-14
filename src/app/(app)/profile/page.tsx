@@ -1,8 +1,6 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-
-const Profile = dynamic(() => import('@/views/profile'), { ssr: false })
+import Profile from '@/views/profile'
 
 export default function ProfilePage() {
   return <Profile />

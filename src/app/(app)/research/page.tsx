@@ -1,8 +1,6 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-
-const Research = dynamic(() => import('@/views/research'), { ssr: false })
+import Research from '@/views/research'
 
 export default function ResearchPage() {
   return <Research />

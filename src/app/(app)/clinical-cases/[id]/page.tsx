@@ -1,8 +1,6 @@
 'use client'
 
-import dynamic from 'next/dynamic'
-
-const ClinicalCaseDetail = dynamic(() => import('@/views/clinical-case-detail'), { ssr: false })
+import ClinicalCaseDetail from '@/views/clinical-case-detail'
 
 export default function ClinicalCaseDetailPage() {
   return <ClinicalCaseDetail />

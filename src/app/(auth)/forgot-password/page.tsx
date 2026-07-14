@@ -1,9 +1,7 @@
 'use client'
 
-import dynamic from 'next/dynamic'
 import { Providers } from '@/app/providers'
-
-const ForgotPassword = dynamic(() => import('@/views/auth/forgot-password'), { ssr: false })
+import ForgotPassword from '@/views/auth/forgot-password'
 
 export default function ForgotPasswordPage() {
   return (
