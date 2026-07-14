@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { getDb, getSql } from '@/lib/db'
 import { users, facilities } from '@/lib/schema'
-import { eq, desc, ilike, and, or, count, sql } from 'drizzle-orm'
+import { eq, desc, ilike, and, or, count } from 'drizzle-orm'
 import { hashPassword } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
@@ -78,16 +78,15 @@ export async function POST(request: NextRequest) {
     }
 
     const passwordHash = await hashPassword(body.password)
-    const db = getDb()
+    const sql = getSql()
 
-    const rows = await db.execute(sql`
+    const rows = await sql`
       INSERT INTO users (email, firstname, lastname, role, facility_id, password_hash)
       VALUES (${body.email}, ${body.firstname}, ${body.lastname}, ${body.role}::user_role, ${body.facilityId || null}, ${passwordHash})
       RETURNING id, facility_id, firstname, lastname, email, role, is_active, created_at, updated_at
-    `)
+    `
 
-    const row = rows.rows?.[0]
-    return NextResponse.json(row, { status: 201 })
+    return NextResponse.json(rows[0], { status: 201 })
   } catch (e: unknown) {
     console.error('POST /users error:', e)
     const msg = e instanceof Error ? e.message : String(e)

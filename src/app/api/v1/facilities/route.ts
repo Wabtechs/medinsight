@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { getDb, getSql } from '@/lib/db'
 import { facilities } from '@/lib/schema'
-import { eq, desc, ilike, and, count, sql } from 'drizzle-orm'
+import { eq, desc, ilike, and, count } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,15 +55,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ detail: `facilityType must be one of: ${validTypes.join(', ')}` }, { status: 400 })
     }
 
-    const db = getDb()
-    const rows = await db.execute(sql`
+    const sql = getSql()
+    const rows = await sql`
       INSERT INTO facilities (name, code, facility_type, address, city, phone, email, bed_count)
       VALUES (${body.name}, ${body.code}, ${body.facilityType}::facility_type, ${body.address || null}, ${body.city || null}, ${body.phone || null}, ${body.email || null}, ${body.bedCount || 0})
       RETURNING id, name, code, facility_type, address, city, phone, email, bed_count, department_count, staff_count, is_active, created_at, updated_at
-    `)
+    `
 
-    const created = rows.rows?.[0]
-    return NextResponse.json(created, { status: 201 })
+    return NextResponse.json(rows[0], { status: 201 })
   } catch (e: unknown) {
     console.error('POST /facilities error:', e)
     const msg = e instanceof Error ? e.message : String(e)

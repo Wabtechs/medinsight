@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { getDb, getSql } from '@/lib/db'
 import { patients, facilities } from '@/lib/schema'
 import { eq, desc, ilike, and, or, count } from 'drizzle-orm'
 
@@ -51,9 +51,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
 
-    if (!body.patientUuid) {
-      body.patientUuid = crypto.randomUUID()
-    }
+    const patientUuid = body.patientUuid || crypto.randomUUID()
 
     if (body.facilityId) {
       const facilityCheck = await getDb().select({ id: facilities.id }).from(facilities).where(eq(facilities.id, body.facilityId)).limit(1)
@@ -62,26 +60,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const [created] = await getDb().insert(patients).values({
-      patientUuid: body.patientUuid,
-      firstname: body.firstname,
-      lastname: body.lastname,
-      email: body.email,
-      sex: body.sex,
-      dateOfBirth: body.dateOfBirth,
-      bloodGroup: body.bloodGroup,
-      facilityId: body.facilityId || null,
-      allergies: body.allergies,
-      medicalHistory: body.medicalHistory,
-      insuranceNumber: body.insuranceNumber,
-      insuranceProvider: body.insuranceProvider,
-      isSmoker: body.isSmoker,
-      isDrinker: body.isDrinker,
-      heightCm: body.heightCm,
-      weightKg: body.weightKg,
-    }).returning()
+    const sql = getSql()
+    const allergiesStr = body.allergies ? JSON.stringify(body.allergies) : '[]'
 
-    return NextResponse.json(created, { status: 201 })
+    const rows = await sql`
+      INSERT INTO patients (patient_uuid, firstname, lastname, email, sex, date_of_birth, blood_group, facility_id, allergies)
+      VALUES (${patientUuid}, ${body.firstname || null}, ${body.lastname || null}, ${body.email || null}, ${body.sex || null}, ${body.dateOfBirth || null}, ${body.bloodGroup || null}, ${body.facilityId || null}, ${allergiesStr}::jsonb)
+      RETURNING id, facility_id, patient_uuid, firstname, lastname, email, sex, date_of_birth, blood_group, is_active, created_at, updated_at
+    `
+
+    return NextResponse.json(rows[0], { status: 201 })
   } catch (e) {
     return NextResponse.json({ detail: 'Internal server error', message: e instanceof Error ? e.message : String(e) }, { status: 500 })
   }

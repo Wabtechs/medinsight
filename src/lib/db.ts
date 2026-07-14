@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/neon-http'
 import * as schema from './schema'
 
 let _db: ReturnType<typeof drizzle<typeof schema>> | null = null
+let _sql: ReturnType<typeof neon> | null = null
 
 function getNeonUrl(): string {
   const raw = process.env.NEON_DATABASE_URL
@@ -28,4 +29,13 @@ export function getDb() {
     _db = drizzle(neon(url), { schema })
   }
   return _db
+}
+
+export function getSql() {
+  if (!_sql) {
+    const url = getNeonUrl()
+    if (!url) throw new Error('DATABASE_URL is not set')
+    _sql = neon(url)
+  }
+  return _sql
 }

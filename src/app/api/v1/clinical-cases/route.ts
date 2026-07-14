@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getDb } from '@/lib/db'
+import { getDb, getSql } from '@/lib/db'
 import { clinicalCases, patients, users, facilities } from '@/lib/schema'
-import { eq, desc, ilike, and, or, count, sql } from 'drizzle-orm'
+import { eq, desc, ilike, and, or, count } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
   try {
@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     const db = getDb()
+    const sql = getSql()
 
     const patientCheck = await db.select({ id: patients.id }).from(patients).where(eq(patients.id, body.patientId)).limit(1)
     if (patientCheck.length === 0) {
@@ -105,14 +106,13 @@ export async function POST(request: NextRequest) {
     const symptomsStr = body.symptomsJson ? JSON.stringify(body.symptomsJson) : '{}'
     const tagsStr = body.tagsJson ? JSON.stringify(body.tagsJson) : '{}'
 
-    const rows = await db.execute(sql`
+    const rows = await sql`
       INSERT INTO clinical_cases (patient_id, doctor_id, facility_id, title, description, symptoms_json, provisional_diagnosis, treatment, treatment_duration, outcome_status, outcome_notes, priority, tags_json)
       VALUES (${body.patientId}, ${body.doctorId || null}, ${body.facilityId || null}, ${body.title || null}, ${body.description || null}, ${symptomsStr}::jsonb, ${body.provisionalDiagnosis || null}, ${body.treatment || null}, ${body.treatmentDuration || null}, ${outcomeVal}::outcome_status, ${body.outcomeNotes || null}, ${body.priority || 'medium'}, ${tagsStr}::jsonb)
       RETURNING id, facility_id, patient_id, doctor_id, title, description, symptoms_json, provisional_diagnosis, treatment, treatment_duration, outcome_status, outcome_notes, priority, tags_json, is_synced, created_at, updated_at
-    `)
+    `
 
-    const created = rows.rows?.[0]
-    return NextResponse.json(created, { status: 201 })
+    return NextResponse.json(rows[0], { status: 201 })
   } catch (e: unknown) {
     console.error('POST /clinical-cases error:', e)
     const msg = e instanceof Error ? e.message : String(e)
