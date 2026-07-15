@@ -6,13 +6,14 @@ import { useToast } from '@/hooks/use-toast'
 import {
   Search,
   Plus,
-  MoreHorizontal,
   Mail,
   Building2,
   ChevronUp,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -42,7 +43,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table'
-import { useUsersData, useFacilitiesData } from '@/hooks/use-data'
+import { useUsersData, useFacilitiesData, useUpdateUser } from '@/hooks/use-data'
 import { api } from '@/services/api'
 import { formatDate, getInitials } from '@/lib/utils'
 import { sanitizeUuid } from '@/lib/validation'
@@ -86,15 +87,19 @@ export default function Users() {
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<string>('all')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
   const [creating, setCreating] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [page, setPage] = useState(1)
   const [sortField, setSortField] = useState<SortField>('name')
   const [sortDir, setSortDir] = useState<SortDirection>('asc')
   const { data: usersData, isLoading } = useUsersData()
   const { data: facilitiesData } = useFacilitiesData()
+  const updateUser = useUpdateUser()
   const users = usersData?.items ?? []
   const facilitiesList = facilitiesData?.items ?? []
-  const [localUsers, setLocalUsers] = useState<User[]>([])
+  const [localUsers] = useState<User[]>([])
 
   const [newName, setNewName] = useState('')
   const [newEmail, setNewEmail] = useState('')
@@ -103,6 +108,11 @@ export default function Users() {
   const [newPhone, setNewPhone] = useState('')
   const [newDepartment, setNewDepartment] = useState('')
   const [newPassword, setNewPassword] = useState('')
+
+  const [editName, setEditName] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editRole, setEditRole] = useState<User['role']>('doctor')
+  const [editFacility, setEditFacility] = useState('')
 
   const facilityMap = useMemo(
     () => Object.fromEntries(facilitiesList.map((f) => [f.id, f.name])),
@@ -215,6 +225,43 @@ export default function Users() {
       toast({ title: 'Erreur', description: "Impossible de créer l'utilisateur.", variant: 'destructive' })
     } finally {
       setCreating(false)
+    }
+  }
+
+  const openEditDialog = (user: User) => {
+    setEditingUser(user)
+    setEditName(user.name)
+    setEditEmail(user.email)
+    setEditRole(user.role)
+    setEditFacility(user.facility || '')
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdateUser = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingUser) return
+    setSaving(true)
+    try {
+      const nameParts = editName.trim().split(' ')
+      const firstname = nameParts[0] || editName
+      const lastname = nameParts.slice(1).join(' ') || editName
+      await updateUser.mutateAsync({
+        id: editingUser.id,
+        data: {
+          firstname,
+          lastname,
+          email: editEmail,
+          role: ROLE_MAP[editRole] || 'DOCTOR',
+          facilityId: sanitizeUuid(editFacility),
+        },
+      })
+      toast({ title: 'Utilisateur mis à jour', description: `${editName} a été modifié.` })
+      setEditDialogOpen(false)
+      setEditingUser(null)
+    } catch {
+      toast({ title: 'Erreur', description: "Impossible de modifier l'utilisateur.", variant: 'destructive' })
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -380,6 +427,83 @@ export default function Users() {
             </form>
           </DialogContent>
         </Dialog>
+
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Modifier l&apos;Utilisateur</DialogTitle>
+              <DialogDescription>
+                Modifiez les informations de l&apos;utilisateur.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdateUser} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-user-name">Nom complet</Label>
+                <Input
+                  id="edit-user-name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Dr. Jean Dupont"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-user-email">Email</Label>
+                <Input
+                  id="edit-user-email"
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="jean.dupont@medinsight.dz"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Rôle</Label>
+                <Select
+                  value={editRole}
+                  onValueChange={(v) => setEditRole(v as User['role'])}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="doctor">Médecin</SelectItem>
+                    <SelectItem value="nurse">Infirmier</SelectItem>
+                    <SelectItem value="researcher">Chercheur</SelectItem>
+                    <SelectItem value="viewer">Observateur</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Établissement</Label>
+                <Select value={editFacility} onValueChange={setEditFacility}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un établissement" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {facilitiesList.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditDialogOpen(false)}
+                >
+                  Annuler
+                </Button>
+                <Button type="submit" disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row">
@@ -478,7 +602,7 @@ export default function Users() {
                       Statut <SortIcon field="isActive" sortField={sortField} sortDir={sortDir} />
                     </span>
                   </TableHead>
-                  <TableHead className="w-[50px]">
+                  <TableHead className="w-[80px]">
                     <span className="sr-only">Actions</span>
                   </TableHead>
                 </TableRow>
@@ -531,14 +655,26 @@ export default function Users() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => toast({ title: "Bientôt disponible", description: "Les actions sur les utilisateurs seront disponibles prochainement" })}
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => openEditDialog(user as User)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-destructive hover:text-destructive"
+                          onClick={() => {
+                            toast({ title: "Bientôt disponible", description: "La suppression sera disponible prochainement" })
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}

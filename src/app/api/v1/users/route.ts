@@ -2,12 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb, getSql } from '@/lib/db'
 import { users, facilities } from '@/lib/schema'
 import { eq, desc, ilike, and, or, count } from 'drizzle-orm'
-import { hashPassword } from '@/lib/auth'
+import { hashPassword, verifyToken, getTokenFromRequest } from '@/lib/auth'
 import { sanitizeUuid } from '@/lib/validation'
 import { apiError, logError, parsePagination } from '@/lib/api-errors'
 
 export async function GET(request: NextRequest) {
   try {
+    const token = getTokenFromRequest(request)
+    if (!token) {
+      return apiError(401, 'Authentication required')
+    }
+
+    const payload = await verifyToken(token)
+    if (!payload) {
+      return apiError(401, 'Invalid or expired token')
+    }
+
     const { searchParams } = new URL(request.url)
     const { page, size, search, offset } = parsePagination(searchParams)
 
@@ -59,6 +69,20 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const token = getTokenFromRequest(request)
+    if (!token) {
+      return apiError(401, 'Authentication required')
+    }
+
+    const payload = await verifyToken(token)
+    if (!payload) {
+      return apiError(401, 'Invalid or expired token')
+    }
+
+    if (payload.role !== 'ADMIN') {
+      return apiError(403, 'Only administrators can create users')
+    }
+
     const body = await request.json()
 
     if (!body.email || !body.firstname || !body.lastname || !body.role) {

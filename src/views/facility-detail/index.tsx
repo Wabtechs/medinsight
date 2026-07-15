@@ -1,402 +1,603 @@
 'use client'
 
-import { useParams } from 'next/navigation'
+import { useState, useMemo } from 'react'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft,
-  Building2,
+  Calendar,
   MapPin,
   Phone,
   Mail,
-  Bed,
-  LayoutGrid,
+  Globe,
+  Building2,
   Users,
+  Bed,
   Stethoscope,
-  FlaskConical,
-  Pill,
+  AlertCircle,
+  Loader2,
+  Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Separator } from '@/components/ui/separator'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+} from '@/components/ui/card'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Table,
-  TableHeader,
   TableBody,
-  TableRow,
-  TableHead,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table'
 import {
-  mockFacilities,
-  mockUsers,
-  mockPatients,
-  mockClinicalCases,
-} from '@/lib/mock-data'
-import { formatDate, getInitials } from '@/lib/utils'
-import type { Facility } from '@/types'
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select'
+import {
+  useFacilityDetail,
+  useClinicalCasesData,
+  usePatientsData,
+  useUsersData,
+  useUpdateFacility,
+} from '@/hooks/use-data'
+import { useToast } from '@/hooks/use-toast'
+import { formatDate, getStatusLabel, getStatusColor, getRoleLabel } from '@/lib/utils'
 
-const facilityTypeLabels: Record<Facility['type'], string> = {
+const typeLabels: Record<string, string> = {
   hospital: 'Hôpital',
   clinic: 'Clinique',
-  laboratory: 'Laboratoire',
-  pharmacy: 'Pharmacie',
+  center: 'Centre',
+  polyclinic: 'Polyclinique',
+  other: 'Autre',
 }
 
-const facilityTypeIcons: Record<Facility['type'], React.ReactNode> = {
-  hospital: <Building2 className="h-5 w-5" />,
-  clinic: <Stethoscope className="h-5 w-5" />,
-  laboratory: <FlaskConical className="h-5 w-5" />,
-  pharmacy: <Pill className="h-5 w-5" />,
-}
-
-const roleLabels: Record<string, string> = {
-  admin: 'Admin',
-  doctor: 'Médecin',
-  nurse: 'Infirmier',
-  researcher: 'Chercheur',
-  viewer: 'Observateur',
-}
-
-const roleBadgeColors: Record<string, string> = {
-  admin: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-  doctor: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  nurse: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  researcher:
-    'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-  viewer: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
-}
-
-const caseStatusLabels: Record<string, string> = {
-  draft: 'Brouillon',
-  active: 'Actif',
-  in_review: 'En revue',
-  resolved: 'Résolu',
-  archived: 'Archivé',
-}
-
-export default function FacilityDetail() {
+export default function FacilityDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const facility = mockFacilities.find((f) => f.id === id)
+  const router = useRouter()
 
-  if (!facility) {
+  const { data: facility, isLoading, error } = useFacilityDetail(id)
+  const { data: allCasesData } = useClinicalCasesData()
+  const { data: allPatientsData } = usePatientsData()
+  const { data: allUsersData } = useUsersData()
+
+  const [selectedTab, setSelectedTab] = useState('overview')
+  const updateFacility = useUpdateFacility()
+  const { toast } = useToast()
+
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editForm, setEditForm] = useState({
+    name: '', type: '', address: '', city: '', phone: '', email: '', bedCount: '',
+  })
+
+  const f = facility as Record<string, unknown> | null | undefined
+
+  const openEditDialog = () => {
+    if (!f) return
+    setEditForm({
+      name: (f.name as string) || '',
+      type: (f.type as string) || 'hospital',
+      address: (f.address as string) || '',
+      city: (f.city as string) || '',
+      phone: (f.phone as string) || '',
+      email: (f.email as string) || '',
+      bedCount: String((f.capacity as number) || ''),
+    })
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      await updateFacility.mutateAsync({
+        id: f!.id as string,
+        data: {
+          name: editForm.name,
+          type: editForm.type,
+          address: editForm.address,
+          city: editForm.city,
+          phone: editForm.phone,
+          email: editForm.email,
+          capacity: editForm.bedCount ? Number(editForm.bedCount) : undefined,
+        },
+      })
+      toast({ title: 'Établissement mis à jour', description: 'Les modifications ont été enregistrées.' })
+      setEditDialogOpen(false)
+    } catch {
+      toast({ title: 'Erreur', description: "Impossible de modifier l'établissement.", variant: 'destructive' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const facilityCases = useMemo(() => {
+    if (!f) return []
+    const cases = ((allCasesData as unknown as { items?: Array<Record<string, unknown>> })?.items || []) as Record<string, unknown>[]
+    return cases.filter((c) => c.facilityId === f.id)
+  }, [f, allCasesData])
+
+  const facilityPatients = useMemo(() => {
+    if (!f) return []
+    const patients = ((allPatientsData as unknown as { items?: Array<Record<string, unknown>> })?.items || []) as Record<string, unknown>[]
+    return patients.filter((p) => p.facilityId === f.id)
+  }, [f, allPatientsData])
+
+  const facilityUsers = useMemo(() => {
+    if (!f) return []
+    const users = ((allUsersData as unknown as { items?: Array<Record<string, unknown>> })?.items || []) as Record<string, unknown>[]
+    return users.filter((u) => u.facilityId === f.id)
+  }, [f, allUsersData])
+
+  if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <Building2 className="h-16 w-16 text-muted-foreground/40" />
-        <h2 className="mt-6 text-xl font-bold">Établissement non trouvé</h2>
+      <div className="flex flex-col items-center justify-center py-24">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="mt-4 text-muted-foreground">Chargement de l&apos;établissement...</p>
+      </div>
+    )
+  }
+
+  if (error || !f) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <AlertCircle className="mb-4 h-16 w-16 text-muted-foreground/40" />
+        <h2 className="text-xl font-semibold text-foreground">
+          Établissement non trouvé
+        </h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          L'établissement demandé n'existe pas ou a été supprimé.
+          L&apos;établissement demandé n&apos;existe pas ou a été supprimé.
         </p>
-        <Button asChild className="mt-6">
-          <Link href="/facilities">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Retour aux établissements
-          </Link>
+        <Button
+          variant="outline"
+          className="mt-6"
+          onClick={() => router.push('/facilities')}
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour à la liste
         </Button>
       </div>
     )
   }
 
-  const facilityUsers = mockUsers.filter((u) => u.facility === facility.id)
-  const facilityPatients = mockPatients.filter(
-    (p) => p.facilityId === facility.id
-  )
-  const facilityCases = mockClinicalCases.filter(
-    (c) => c.facilityId === facility.id
-  )
+  const facilityType = (f.type as string) || 'hospital'
+  const facilityStatus = (f.status as string) || 'active'
+
+  const activeCases = facilityCases.filter((c) => c.status === 'active').length
+  const activePatients = facilityPatients.filter((p) => p.status === 'active' || p.isActive).length
+  const totalUsers = facilityUsers.length
 
   return (
     <div className="space-y-6">
-      <Button asChild variant="ghost" className="w-fit -ml-2">
-        <Link href="/facilities">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour
-        </Link>
-      </Button>
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            {facilityTypeIcons[facility.type]}
-          </div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            onClick={() => router.push('/facilities')}
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              {facility.name}
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              {(f.name as string) || 'Sans nom'}
             </h1>
-            <div className="mt-1 flex items-center gap-2">
-              <Badge variant="outline">
-                {facilityTypeLabels[facility.type]}
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <Badge variant={facilityStatus === 'active' ? 'default' : 'secondary'}>
+                {facilityStatus === 'active' ? 'Actif' : facilityStatus}
               </Badge>
-              <Badge variant={facility.isActive ? 'active' : 'secondary'}>
-                {facility.isActive ? 'Actif' : 'Inactif'}
+              <Badge variant="outline">
+                {typeLabels[facilityType] || facilityType}
               </Badge>
             </div>
           </div>
         </div>
+        <Button variant="outline" size="sm" onClick={openEditDialog}>
+          <Pencil className="mr-2 h-4 w-4" />
+          Modifier
+        </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Informations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="space-y-6 lg:col-span-2">
+          <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+            <TabsList>
+              <TabsTrigger value="overview">Aperçu</TabsTrigger>
+              <TabsTrigger value="cases">
+                Cas ({facilityCases.length})
+              </TabsTrigger>
+              <TabsTrigger value="patients">
+                Patients ({facilityPatients.length})
+              </TabsTrigger>
+              <TabsTrigger value="staff">
+                Personnel ({facilityUsers.length})
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="overview" className="space-y-4 pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Description</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {(f.description as string) || 'Aucune description disponible.'}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Card>
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <Building2 className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Type</p>
+                      <p className="text-sm font-medium text-foreground">{typeLabels[facilityType] || facilityType}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <Bed className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Capacité</p>
+                      <p className="text-sm font-medium text-foreground">{(f.capacity as number) || 'Non renseigné'}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Services</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {((f.services as string[]) || []).length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Aucun service renseigné.</p>
+                    ) : (
+                      ((f.services as string[]) || []).map((service) => (
+                        <Badge key={service} variant="outline">
+                          <Stethoscope className="mr-1 h-3 w-3" />
+                          {service}
+                        </Badge>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="cases" className="pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Cas cliniques ({facilityCases.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {facilityCases.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <Stethoscope className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+                      <p className="text-sm text-muted-foreground">
+                        Aucun cas clinique dans cet établissement.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Titre</TableHead>
+                            <TableHead>Statut</TableHead>
+                            <TableHead>Priorité</TableHead>
+                            <TableHead>Créé le</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {facilityCases.map((c) => (
+                            <TableRow key={c.id as string}>
+                              <TableCell>
+                                <Link
+                                  href={`/clinical-cases/${c.id}`}
+                                  className="font-medium text-foreground hover:underline"
+                                >
+                                  {(c.title as string) || (c.diagnosis as string) || 'Sans titre'}
+                                </Link>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={getStatusColor(c.status as string)}>
+                                  {getStatusLabel(c.status as string)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">
+                                  {((c.priority as string) || 'medium').charAt(0).toUpperCase() + ((c.priority as string) || 'medium').slice(1)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {formatDate(c.createdAt as string)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="patients" className="pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Patients ({facilityPatients.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {facilityPatients.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <Users className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+                      <p className="text-sm text-muted-foreground">
+                        Aucun patient dans cet établissement.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Nom</TableHead>
+                            <TableHead>Statut</TableHead>
+                            <TableHead>Inscrit le</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {facilityPatients.map((p) => (
+                            <TableRow key={p.id as string}>
+                              <TableCell>
+                                <Link
+                                  href={`/patients/${p.id}`}
+                                  className="font-medium text-foreground hover:underline"
+                                >
+                                  {(p.firstName as string) || ''} {(p.lastName as string) || ''}
+                                </Link>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={getStatusColor(p.status as string)}>
+                                  {getStatusLabel(p.status as string)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {formatDate(p.createdAt as string)}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="staff" className="pt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Personnel ({facilityUsers.length})</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {facilityUsers.length === 0 ? (
+                    <div className="py-8 text-center">
+                      <Users className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+                      <p className="text-sm text-muted-foreground">
+                        Aucun membre du personnel dans cet établissement.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Nom</TableHead>
+                            <TableHead>Rôle</TableHead>
+                            <TableHead>Email</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {facilityUsers.map((u) => (
+                            <TableRow key={u.id as string}>
+                              <TableCell className="font-medium text-foreground">
+                                {(u.firstName as string) || ''} {(u.lastName as string) || ''}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">
+                                  {getRoleLabel(u.role as string)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {(u.email as string) || '—'}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Statistiques</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Stethoscope className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Cas actifs</p>
+                  <p className="text-sm font-medium text-foreground">{activeCases}</p>
+                </div>
+              </div>
+              <Separator />
+              <div className="flex items-center gap-3">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Patients actifs</p>
+                  <p className="text-sm font-medium text-foreground">{activePatients}</p>
+                </div>
+              </div>
+              <Separator />
+              <div className="flex items-center gap-3">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Personnel</p>
+                  <p className="text-sm font-medium text-foreground">{totalUsers}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Contact</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {(f.phone as string) && (
+                <div className="flex items-center gap-3">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground">{f.phone as string}</span>
+                </div>
+              )}
+              {(f.email as string) && (
+                <div className="flex items-center gap-3">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground">{f.email as string}</span>
+                </div>
+              )}
+              {(f.website as string) && (
+                <div className="flex items-center gap-3">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm text-foreground">{f.website as string}</span>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Adresse</CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-medium">Adresse</p>
-                  <p className="text-sm text-muted-foreground">
-                    {facility.address}, {facility.city}
+                  <p className="text-sm text-foreground">
+                    {(f.address as string) || 'Non renseignée'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {(f.city as string) || ''} {(f.wilaya as string) || ''}
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3">
-                <Phone className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">Téléphone</p>
-                  <p className="text-sm text-muted-foreground">
-                    {facility.phone}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Mail className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">Email</p>
-                  <p className="text-sm text-muted-foreground">
-                    {facility.email}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Building2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                <div>
-                  <p className="text-sm font-medium">Créé le</p>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDate(facility.createdAt)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <div className="space-y-4">
-          <Card>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-300">
-                <Bed className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{facility.bedCount}</p>
-                <p className="text-xs text-muted-foreground">Lits</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-300">
-                <LayoutGrid className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {facility.departmentCount}
-                </p>
-                <p className="text-xs text-muted-foreground">Départements</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-600 dark:bg-green-900 dark:text-green-300">
-                <Users className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{facility.staffCount}</p>
-                <p className="text-xs text-muted-foreground">Personnel</p>
-              </div>
-            </CardContent>
-          </Card>
+          {(f.createdAt as string) && (
+            <Card>
+              <CardContent className="flex items-center gap-3 p-4">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Inscrit le</p>
+                  <p className="text-sm text-foreground">{formatDate(f.createdAt as string)}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
-      <Tabs defaultValue="staff">
-        <TabsList>
-          <TabsTrigger value="staff">
-            Personnel ({facilityUsers.length})
-          </TabsTrigger>
-          <TabsTrigger value="patients">
-            Patients ({facilityPatients.length})
-          </TabsTrigger>
-          <TabsTrigger value="cases">
-            Cas Cliniques ({facilityCases.length})
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="staff">
-          <Card>
-            <CardContent className="p-0">
-              {facilityUsers.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-12 text-center">
-                  <Users className="h-10 w-10 text-muted-foreground/40" />
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Aucun personnel assigné à cet établissement.
-                  </p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nom</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Rôle</TableHead>
-                      <TableHead>Département</TableHead>
-                      <TableHead>Statut</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {facilityUsers.map((user) => (
-                      <TableRow key={user.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium">
-                              {getInitials(user.name)}
-                            </div>
-                            <span className="font-medium">{user.name}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {user.email}
-                        </TableCell>
-                        <TableCell>
-                          <span
-                            className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ${roleBadgeColors[user.role]}`}
-                          >
-                            {roleLabels[user.role]}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {user.department || '—'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={user.isActive ? 'active' : 'secondary'}>
-                            {user.isActive ? 'Actif' : 'Inactif'}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="patients">
-          <Card>
-            <CardContent className="p-0">
-              {facilityPatients.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-12 text-center">
-                  <Users className="h-10 w-10 text-muted-foreground/40" />
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Aucun patient enregistré dans cet établissement.
-                  </p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Nom</TableHead>
-                      <TableHead>N° dossier</TableHead>
-                      <TableHead>Date de naissance</TableHead>
-                      <TableHead>Groupe sanguin</TableHead>
-                      <TableHead>Dernière visite</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {facilityPatients.map((patient) => (
-                      <TableRow key={patient.id}>
-                        <TableCell className="font-medium">
-                          {patient.firstName} {patient.lastName}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {patient.medicalRecordNumber}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(patient.dateOfBirth)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{patient.bloodType}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {patient.lastVisit
-                            ? formatDate(patient.lastVisit)
-                            : '—'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="cases">
-          <Card>
-            <CardContent className="p-0">
-              {facilityCases.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-12 text-center">
-                  <Stethoscope className="h-10 w-10 text-muted-foreground/40" />
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    Aucun cas clinique pour cet établissement.
-                  </p>
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Titre</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Priorité</TableHead>
-                      <TableHead>Créé le</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {facilityCases.map((c) => (
-                      <TableRow key={c.id}>
-                        <TableCell className="font-medium">
-                          {c.title}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={c.status as 'active' | 'in_review' | 'resolved' | 'draft' | 'archived'}>
-                            {caseStatusLabels[c.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={c.priority as 'low' | 'medium' | 'high' | 'critical'}>
-                            {c.priority === 'critical'
-                              ? 'Critique'
-                              : c.priority === 'high'
-                              ? 'Haute'
-                              : c.priority === 'medium'
-                              ? 'Moyenne'
-                              : 'Basse'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {formatDate(c.createdAt)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Modifier l'établissement</DialogTitle>
+            <DialogDescription>
+              Modifiez les informations de l'établissement ci-dessous.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdate} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nom</Label>
+              <Input id="name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="type">Type</Label>
+              <Select value={editForm.type} onValueChange={(v) => setEditForm({ ...editForm, type: v })}>
+                <SelectTrigger id="type">
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(typeLabels).map(([key, label]) => (
+                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">Adresse</Label>
+              <Input id="address" value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="city">Ville</Label>
+              <Input id="city" value={editForm.city} onChange={(e) => setEditForm({ ...editForm, city: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Téléphone</Label>
+                <Input id="phone" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bedCount">Capacité (lits)</Label>
+              <Input id="bedCount" type="number" min="0" value={editForm.bedCount} onChange={(e) => setEditForm({ ...editForm, bedCount: e.target.value })} />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)} disabled={saving}>
+                Annuler
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Enregistrement...' : 'Enregistrer'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

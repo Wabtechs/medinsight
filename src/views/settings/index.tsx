@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,9 +23,58 @@ import {
   Save,
 } from "lucide-react";
 import { useAppStore } from "@/store";
+import { useToast } from "@/hooks/use-toast";
+
+const SETTINGS_KEY = "medinsight_settings";
+
+interface SavedSettings {
+  platformName: string;
+  language: string;
+  timezone: string;
+  facility: string;
+  dateFormat: string;
+  emailNotifications: boolean;
+  newCaseAlerts: boolean;
+  caseUpdateAlerts: boolean;
+  reminderAlerts: boolean;
+  reportAlerts: boolean;
+  emailFrequency: string;
+  twoFactorAuth: boolean;
+  sessionTimeout: string;
+  sidebarHover: boolean;
+  compactMode: boolean;
+}
+
+function loadSettings(): SavedSettings {
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore parse errors, use defaults */ }
+  return {
+    platformName: "MedInsight",
+    language: "fr",
+    timezone: "Africa/Algiers",
+    facility: "hospital-central",
+    dateFormat: "DD/MM/YYYY",
+    emailNotifications: true,
+    newCaseAlerts: true,
+    caseUpdateAlerts: true,
+    reminderAlerts: false,
+    reportAlerts: true,
+    emailFrequency: "daily",
+    twoFactorAuth: false,
+    sessionTimeout: "30",
+    sidebarHover: true,
+    compactMode: false,
+  };
+}
 
 export default function SettingsPage() {
   const { darkMode, toggleDarkMode } = useAppStore();
+  const { toast } = useToast();
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
   const [platformName, setPlatformName] = useState("MedInsight");
   const [language, setLanguage] = useState("fr");
   const [timezone, setTimezone] = useState("Africa/Algiers");
@@ -45,11 +94,39 @@ export default function SettingsPage() {
   const [sidebarHover, setSidebarHover] = useState(true);
   const [compactMode, setCompactMode] = useState(false);
 
-  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    const loaded = loadSettings();
+    setPlatformName(loaded.platformName);
+    setLanguage(loaded.language);
+    setTimezone(loaded.timezone);
+    setFacility(loaded.facility);
+    setDateFormat(loaded.dateFormat);
+    setEmailNotifications(loaded.emailNotifications);
+    setNewCaseAlerts(loaded.newCaseAlerts);
+    setCaseUpdateAlerts(loaded.caseUpdateAlerts);
+    setReminderAlerts(loaded.reminderAlerts);
+    setReportAlerts(loaded.reportAlerts);
+    setEmailFrequency(loaded.emailFrequency);
+    setTwoFactorAuth(loaded.twoFactorAuth);
+    setSessionTimeout(loaded.sessionTimeout);
+    setSidebarHover(loaded.sidebarHover);
+    setCompactMode(loaded.compactMode);
+  }, []);
 
   const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    setSaving(true);
+    const settings: SavedSettings = {
+      platformName, language, timezone, facility, dateFormat,
+      emailNotifications, newCaseAlerts, caseUpdateAlerts, reminderAlerts, reportAlerts, emailFrequency,
+      twoFactorAuth, sessionTimeout, sidebarHover, compactMode,
+    };
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    setTimeout(() => {
+      setSaving(false);
+      setSaved(true);
+      toast({ title: "Paramètres sauvegardés", description: "Vos préférences ont été enregistrées." });
+      setTimeout(() => setSaved(false), 2500);
+    }, 500);
   };
 
   return (
@@ -166,9 +243,9 @@ export default function SettingsPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSave}>
+              <Button onClick={handleSave} disabled={saving}>
                 <Save className="mr-2 h-4 w-4" />
-                Sauvegarder
+                {saving ? "Sauvegarde..." : "Sauvegarder"}
               </Button>
             </CardFooter>
           </Card>
@@ -239,9 +316,9 @@ export default function SettingsPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSave}>
+              <Button onClick={handleSave} disabled={saving}>
                 <Save className="mr-2 h-4 w-4" />
-                Sauvegarder
+                {saving ? "Sauvegarde..." : "Sauvegarder"}
               </Button>
             </CardFooter>
           </Card>
@@ -295,9 +372,9 @@ export default function SettingsPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSave}>
+              <Button onClick={handleSave} disabled={saving}>
                 <Save className="mr-2 h-4 w-4" />
-                Sauvegarder
+                {saving ? "Sauvegarde..." : "Sauvegarder"}
               </Button>
             </CardFooter>
           </Card>
@@ -356,9 +433,9 @@ export default function SettingsPage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSave}>
+              <Button onClick={handleSave} disabled={saving}>
                 <Save className="mr-2 h-4 w-4" />
-                Sauvegarder
+                {saving ? "Sauvegarde..." : "Sauvegarder"}
               </Button>
             </CardFooter>
           </Card>

@@ -265,18 +265,15 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden animate-fade-in-up lg:block" style={{ animationDelay: '0.2s' }}>
-            <picture>
-              <source srcSet="/hero-illustration.webp" type="image/webp" />
-              <img
-                src="/hero-illustration.png"
-                alt="MedInsight Dashboard"
-                className="aspect-[4/3] w-full rounded-3xl border border-white/10 shadow-2xl object-cover"
-                width="800"
-                height="600"
-                loading="eager"
-                fetchPriority="high"
-              />
-            </picture>
+            <img
+              src="/hero-illustration.png"
+              alt="MedInsight Dashboard"
+              className="aspect-[4/3] w-full rounded-3xl border border-white/10 shadow-2xl object-cover"
+              width="800"
+              height="600"
+              loading="eager"
+              fetchPriority="high"
+            />
           </div>
         </div>
 
@@ -374,17 +371,14 @@ export default function LandingPage() {
               </Button>
             </div>
 
-            <picture>
-              <source srcSet="/about-illustration.webp" type="image/webp" />
-              <img
-                src="/about-illustration.png"
-                alt="MedInsight Team"
-                className="aspect-[1/1.1] w-full rounded-3xl shadow-xl object-cover"
-                width="600"
-                height="660"
-                loading="lazy"
-              />
-            </picture>
+            <img
+              src="/about-illustration.png"
+              alt="MedInsight Team"
+              className="aspect-[1/1.1] w-full rounded-3xl shadow-xl object-cover"
+              width="600"
+              height="660"
+              loading="lazy"
+            />
           </div>
         </div>
       </section>

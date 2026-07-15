@@ -17,6 +17,8 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,7 +56,7 @@ import {
   DialogFooter,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { useClinicalCasesData, usePatientsData, useFacilitiesData, useUsersData } from '@/hooks/use-data'
+import { useClinicalCasesData, usePatientsData, useFacilitiesData, useUsersData, useUpdateClinicalCase, useDeleteClinicalCase } from '@/hooks/use-data'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/services/api'
 import { formatDate } from '@/lib/utils'
@@ -97,9 +99,26 @@ export default function ClinicalCasesPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid')
   const [currentPage, setCurrentPage] = useState(1)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingCase, setEditingCase] = useState<Record<string, unknown> | null>(null)
   const [creating, setCreating] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const updateCase = useUpdateClinicalCase()
+  const deleteCase = useDeleteClinicalCase()
 
   const [newCase, setNewCase] = useState({
+    title: '',
+    description: '',
+    patientId: '',
+    facilityId: '',
+    assignedDoctorId: '',
+    priority: '' as CasePriority | '',
+    diagnosis: '',
+    symptoms: '',
+    tags: '',
+  })
+
+  const [editCase, setEditCase] = useState({
     title: '',
     description: '',
     patientId: '',
@@ -168,6 +187,61 @@ export default function ClinicalCasesPage() {
       toast({ title: 'Erreur', description: "Impossible de créer le cas clinique.", variant: 'destructive' })
     } finally {
       setCreating(false)
+    }
+  }
+
+  const openEditDialog = (c: Record<string, unknown>) => {
+    setEditingCase(c)
+    setEditCase({
+      title: (c.title as string) || '',
+      description: (c.description as string) || '',
+      patientId: (c.patientId as string) || '',
+      facilityId: (c.facilityId as string) || '',
+      assignedDoctorId: (c.assignedDoctorId as string) || (c.doctorId as string) || '',
+      priority: ((c.priority as string) || 'medium') as CasePriority | '',
+      diagnosis: (c.diagnosis as string) || '',
+      symptoms: Array.isArray(c.symptoms) ? (c.symptoms as string[]).join(', ') : '',
+      tags: Array.isArray(c.tags) ? (c.tags as string[]).join(', ') : '',
+    })
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdateCase = async () => {
+    if (!editingCase) return
+    setSaving(true)
+    try {
+      await updateCase.mutateAsync({
+        id: editingCase.id as string,
+        data: {
+          title: editCase.title,
+          description: editCase.description,
+          patientId: sanitizeUuid(editCase.patientId),
+          facilityId: sanitizeUuid(editCase.facilityId),
+          doctorId: sanitizeUuid(editCase.assignedDoctorId),
+          provisionalDiagnosis: editCase.diagnosis,
+          symptomsJson: editCase.symptoms ? { description: editCase.symptoms } : {},
+          tagsJson: editCase.tags ? { tags: editCase.tags.split(',').map((t: string) => t.trim()).filter(Boolean) } : {},
+          priority: editCase.priority || 'medium',
+        },
+      })
+      toast({ title: 'Cas mis à jour', description: `"${editCase.title}" a été modifié.` })
+      setEditDialogOpen(false)
+      setEditingCase(null)
+    } catch {
+      toast({ title: 'Erreur', description: "Impossible de modifier le cas clinique.", variant: 'destructive' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteCase = async (c: Record<string, unknown>) => {
+    const title = (c.title as string) || 'ce cas'
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer "${title}" ? Cette action est irréversible.`)) return
+    try {
+      await deleteCase.mutateAsync(c.id as string)
+      toast({ title: 'Cas supprimé', description: `"${title}" a été supprimé.` })
+    } catch {
+      toast({ title: 'Erreur', description: "Impossible de supprimer le cas.", variant: 'destructive' })
     }
   }
 
@@ -367,6 +441,176 @@ export default function ClinicalCasesPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Modifier le Cas Clinique</DialogTitle>
+              <DialogDescription>
+                Modifiez les informations de ce cas clinique.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Titre *
+                </label>
+                <Input
+                  placeholder="Titre du cas"
+                  value={editCase.title}
+                  onChange={(e) =>
+                    setEditCase({ ...editCase, title: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Description *
+                </label>
+                <Textarea
+                  placeholder="Description détaillée du cas"
+                  rows={3}
+                  value={editCase.description}
+                  onChange={(e) =>
+                    setEditCase({ ...editCase, description: e.target.value })
+                  }
+                />
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Patient
+                  </label>
+                  <Select
+                    value={editCase.patientId}
+                    onValueChange={(v) =>
+                      setEditCase({ ...editCase, patientId: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un patient" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {patientsList.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.firstName} {p.lastName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Établissement
+                  </label>
+                  <Select
+                    value={editCase.facilityId}
+                    onValueChange={(v) =>
+                      setEditCase({ ...editCase, facilityId: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un établissement" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {facilitiesList.map((f) => (
+                        <SelectItem key={f.id} value={f.id}>
+                          {f.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Médecin assigné
+                  </label>
+                  <Select
+                    value={editCase.assignedDoctorId}
+                    onValueChange={(v) =>
+                      setEditCase({ ...editCase, assignedDoctorId: v })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un médecin" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {usersList
+                        .filter((u) => u.role === 'doctor')
+                        .map((u) => (
+                          <SelectItem key={u.id} value={u.id}>
+                            {u.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Priorité
+                  </label>
+                  <Select
+                    value={editCase.priority}
+                    onValueChange={(v) =>
+                      setEditCase({ ...editCase, priority: v as CasePriority })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner la priorité" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Faible</SelectItem>
+                      <SelectItem value="medium">Moyenne</SelectItem>
+                      <SelectItem value="high">Élevée</SelectItem>
+                      <SelectItem value="critical">Critique</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Diagnostic
+                </label>
+                <Input
+                  placeholder="Diagnostic principal"
+                  value={editCase.diagnosis}
+                  onChange={(e) =>
+                    setEditCase({ ...editCase, diagnosis: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Symptômes (séparés par des virgules)
+                </label>
+                <Input
+                  placeholder="ex: Fièvre, Toux, Douleur"
+                  value={editCase.symptoms}
+                  onChange={(e) =>
+                    setEditCase({ ...editCase, symptoms: e.target.value })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">
+                  Tags (séparés par des virgules)
+                </label>
+                <Input
+                  placeholder="ex: Cardiologie, Urgence"
+                  value={editCase.tags}
+                  onChange={(e) =>
+                    setEditCase({ ...editCase, tags: e.target.value })
+                  }
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                Annuler
+              </Button>
+              <Button type="button" disabled={saving} onClick={handleUpdateCase}>{saving ? 'Enregistrement...' : 'Enregistrer'}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="flex flex-col gap-4">
@@ -484,6 +728,30 @@ export default function ClinicalCasesPage() {
                     <CardTitle className="line-clamp-1 text-base">
                       {c.title}
                     </CardTitle>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        openEditDialog(c as unknown as Record<string, unknown>)
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 shrink-0 text-destructive hover:text-destructive"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        handleDeleteCase(c as unknown as Record<string, unknown>)
+                      }}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     <Badge variant={c.status}>{statusLabels[c.status]}</Badge>
@@ -589,16 +857,39 @@ export default function ClinicalCasesPage() {
                     {formatDate(c.createdAt)}
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        router.push(`/clinical-cases/${c.id}`)
-                      }}
-                    >
-                      Voir
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openEditDialog(c as unknown as Record<string, unknown>)
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeleteCase(c as unknown as Record<string, unknown>)
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          router.push(`/clinical-cases/${c.id}`)
+                        }}
+                      >
+                        Voir
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

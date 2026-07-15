@@ -6,7 +6,6 @@ import {
   UserRound,
   Building2,
   TrendingUp,
-  TrendingDown,
 } from 'lucide-react'
 import {
   Card,
@@ -66,29 +65,21 @@ export default function DashboardPage() {
     {
       title: 'Total Cas Cliniques',
       value: formatNumber(stats.total_cases),
-      change: '+12%',
-      changeType: 'increase' as const,
       icon: FolderOpen,
     },
     {
       title: 'Patients Actifs',
       value: formatNumber(stats.total_patients),
-      change: '+5%',
-      changeType: 'increase' as const,
       icon: UserRound,
     },
     {
       title: 'Établissements',
       value: formatNumber(stats.total_facilities),
-      change: '+2%',
-      changeType: 'increase' as const,
       icon: Building2,
     },
     {
       title: 'Taux de Résolution',
       value: `${stats.resolution_rate}%`,
-      change: '+3%',
-      changeType: 'increase' as const,
       icon: TrendingUp,
     },
   ]
@@ -120,23 +111,7 @@ export default function DashboardPage() {
                   <p className="text-sm font-medium text-muted-foreground">
                     {stat.title}
                   </p>
-                  <div className="flex items-baseline gap-2">
-                    <p className="text-2xl font-bold">{stat.value}</p>
-                    <span
-                      className={`inline-flex items-center gap-0.5 text-xs font-medium ${
-                        stat.changeType === 'increase'
-                          ? 'text-emerald-600'
-                          : 'text-red-600'
-                      }`}
-                    >
-                      {stat.changeType === 'increase' ? (
-                        <TrendingUp className="h-3 w-3" />
-                      ) : (
-                        <TrendingDown className="h-3 w-3" />
-                      )}
-                      {stat.change}
-                    </span>
-                  </div>
+                  <p className="text-2xl font-bold">{stat.value}</p>
                 </div>
               </CardContent>
             </Card>

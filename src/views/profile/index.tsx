@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useAuthStore } from "@/store/auth-store";
 import { useAppStore } from "@/store";
+import { useUpdateUser } from "@/hooks/use-data";
 import {
   User,
   Building2,
@@ -122,6 +123,7 @@ export default function ProfilePage() {
   const { toast } = useToast();
   const { user } = useAuthStore();
   const { darkMode, toggleDarkMode } = useAppStore();
+  const updateUser = useUpdateUser();
 
   const [name, setName] = useState(user?.name ?? "Dr. Amira Benali");
   const [email, setEmail] = useState(user?.email ?? "amira.benali@medinsight.dz");
@@ -133,11 +135,28 @@ export default function ProfilePage() {
   const [emailNotif, setEmailNotif] = useState(true);
   const [itemsPerPage, setItemsPerPage] = useState("25");
 
-  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleSaveInfo = () => {
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+  const handleSaveInfo = async () => {
+    if (!user?.id) {
+      toast({ title: "Erreur", description: "Utilisateur non identifié.", variant: "destructive" });
+      return;
+    }
+    setSaving(true);
+    try {
+      const nameParts = name.split(' ');
+      const firstName = nameParts[0] || '';
+      const lastName = nameParts.slice(1).join(' ') || '';
+      await updateUser.mutateAsync({
+        id: user.id,
+        data: { firstname: firstName, lastname: lastName, email },
+      });
+      toast({ title: "Profil sauvegardé", description: "Vos informations ont été mises à jour." });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de sauvegarder le profil.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const displayName = user?.name ?? "Dr. Amira Benali";
@@ -158,12 +177,6 @@ export default function ProfilePage() {
       </div>
 
       <Separator />
-
-      {saved && (
-        <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200">
-          Profil sauvegardé avec succès
-        </div>
-      )}
 
       {/* Profile Header */}
       <Card>
@@ -261,9 +274,9 @@ export default function ProfilePage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button onClick={handleSaveInfo}>
+                <Button onClick={handleSaveInfo} disabled={saving}>
                   <Save className="mr-2 h-4 w-4" />
-                  Sauvegarder
+                  {saving ? "Sauvegarde..." : "Sauvegarder"}
                 </Button>
               </CardFooter>
             </Card>
@@ -410,9 +423,9 @@ export default function ProfilePage() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSaveInfo}>
+              <Button onClick={handleSaveInfo} disabled={saving}>
                 <Save className="mr-2 h-4 w-4" />
-                Sauvegarder
+                {saving ? "Sauvegarde..." : "Sauvegarder"}
               </Button>
             </CardFooter>
           </Card>

@@ -1,7 +1,18 @@
 import { SignJWT, jwtVerify } from 'jose'
 import bcrypt from 'bcryptjs'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'medinsight-dev-secret-key-change-in-production')
+function getJwtSecret(): Uint8Array {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      console.error('CRITICAL: JWT_SECRET is not set in production!')
+    }
+    return new TextEncoder().encode('medinsight-dev-secret-key-change-in-production')
+  }
+  return new TextEncoder().encode(secret)
+}
+
+const JWT_SECRET = getJwtSecret()
 
 export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 12)

@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQueryClient } from '@tanstack/react-query'
-import { Search, Plus, UserRound, Calendar, Phone, MapPin } from 'lucide-react'
+import { Search, Plus, UserRound, Calendar, Phone, MapPin, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -34,7 +34,7 @@ import {
 } from '@/components/ui/dialog'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
-import { usePatientsData, useFacilitiesData } from '@/hooks/use-data'
+import { usePatientsData, useFacilitiesData, useUpdatePatient, useDeletePatient } from '@/hooks/use-data'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/services/api'
 import { cn, formatDate } from '@/lib/utils'
@@ -62,8 +62,25 @@ export default function PatientsPage() {
   const [facilityFilter, setFacilityFilter] = useState('all')
   const [page, setPage] = useState(1)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editingPatient, setEditingPatient] = useState<Record<string, unknown> | null>(null)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const updatePatient = useUpdatePatient()
+  const deletePatient = useDeletePatient()
   const [form, setForm] = useState({
+    firstName: '',
+    lastName: '',
+    dateOfBirth: '',
+    gender: '' as 'M' | 'F' | '',
+    phone: '',
+    address: '',
+    bloodType: '',
+    facilityId: '',
+    allergies: '',
+  })
+
+  const [editForm, setEditForm] = useState({
     firstName: '',
     lastName: '',
     dateOfBirth: '',
@@ -94,7 +111,7 @@ export default function PatientsPage() {
         facilityFilter === 'all' || p.facilityId === facilityFilter
       return matchesSearch && matchesGender && matchesFacility
     })
-  }, [search, genderFilter, facilityFilter])
+  }, [patients, search, genderFilter, facilityFilter])
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
   const paginated = filtered.slice(
@@ -129,6 +146,62 @@ export default function PatientsPage() {
       toast({ title: 'Erreur', description: "Impossible de créer le patient.", variant: 'destructive' })
     } finally {
       setCreating(false)
+    }
+  }
+
+  const openEditDialog = (patient: Record<string, unknown>) => {
+    setEditingPatient(patient)
+    setEditForm({
+      firstName: (patient.firstName as string) || '',
+      lastName: (patient.lastName as string) || '',
+      dateOfBirth: (patient.dateOfBirth as string) || '',
+      gender: ((patient.gender as string) || '') as 'M' | 'F' | '',
+      phone: (patient.phone as string) || '',
+      address: (patient.address as string) || '',
+      bloodType: (patient.bloodType as string) || '',
+      facilityId: (patient.facilityId as string) || '',
+      allergies: Array.isArray(patient.allergies) ? (patient.allergies as string[]).join(', ') : '',
+    })
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingPatient) return
+    setSaving(true)
+    try {
+      await updatePatient.mutateAsync({
+        id: editingPatient.id as string,
+        data: {
+          firstname: editForm.firstName,
+          lastname: editForm.lastName,
+          dateOfBirth: editForm.dateOfBirth,
+          sex: editForm.gender,
+          phone: editForm.phone,
+          address: editForm.address,
+          bloodGroup: editForm.bloodType,
+          facilityId: sanitizeUuid(editForm.facilityId),
+          allergies: editForm.allergies ? editForm.allergies.split(',').map((a: string) => a.trim()).filter(Boolean) : [],
+        },
+      })
+      toast({ title: 'Patient mis à jour', description: `${editForm.firstName} ${editForm.lastName} a été modifié.` })
+      setEditDialogOpen(false)
+      setEditingPatient(null)
+    } catch {
+      toast({ title: 'Erreur', description: "Impossible de modifier le patient.", variant: 'destructive' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (patient: Record<string, unknown>) => {
+    const name = `${patient.firstName || ''} ${patient.lastName || ''}`.trim()
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer le patient "${name}" ? Cette action est irréversible.`)) return
+    try {
+      await deletePatient.mutateAsync(patient.id as string)
+      toast({ title: 'Patient supprimé', description: `${name} a été supprimé.` })
+    } catch {
+      toast({ title: 'Erreur', description: "Impossible de supprimer le patient.", variant: 'destructive' })
     }
   }
 
@@ -281,6 +354,131 @@ export default function PatientsPage() {
             </form>
           </DialogContent>
         </Dialog>
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Modifier le Patient</DialogTitle>
+              <DialogDescription>
+                Modifiez les informations du patient.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdate} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Prénom</label>
+                  <Input
+                    placeholder="Prénom"
+                    value={editForm.firstName}
+                    onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Nom</label>
+                  <Input
+                    placeholder="Nom"
+                    value={editForm.lastName}
+                    onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Date de Naissance</label>
+                  <Input
+                    type="date"
+                    value={editForm.dateOfBirth}
+                    onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Sexe</label>
+                  <Select
+                    value={editForm.gender}
+                    onValueChange={(v) => setEditForm({ ...editForm, gender: v as 'M' | 'F' })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Masculin</SelectItem>
+                      <SelectItem value="F">Féminin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Téléphone</label>
+                  <Input
+                    placeholder="+213 ..."
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Groupe Sanguin</label>
+                  <Select
+                    value={editForm.bloodType}
+                    onValueChange={(v) => setEditForm({ ...editForm, bloodType: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bt) => (
+                        <SelectItem key={bt} value={bt}>
+                          {bt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Adresse</label>
+                <Input
+                  placeholder="Adresse complète"
+                  value={editForm.address}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Établissement</label>
+                <Select
+                  value={editForm.facilityId}
+                  onValueChange={(v) => setEditForm({ ...editForm, facilityId: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un établissement" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {facilitiesList.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Allergies</label>
+                <Input
+                  placeholder="Séparées par des virgules (ex: Pénicilline, Arachides)"
+                  value={editForm.allergies}
+                  onChange={(e) => setEditForm({ ...editForm, allergies: e.target.value })}
+                />
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)}>
+                  Annuler
+                </Button>
+                <Button type="submit" disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <Separator />
@@ -406,13 +604,30 @@ export default function PatientsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => router.push(`/patients/${patient.id}`)}
-                    >
-                      Détails
-                    </Button>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditDialog(patient as unknown as Record<string, unknown>)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(patient as unknown as Record<string, unknown>)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push(`/patients/${patient.id}`)}
+                      >
+                        Détails
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

@@ -12,6 +12,8 @@ import {
   Users,
   Plus,
   Search,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
@@ -36,7 +38,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useFacilitiesData } from '@/hooks/use-data'
+import { useFacilitiesData, useUpdateFacility, useDeleteFacility } from '@/hooks/use-data'
 import { useToast } from '@/hooks/use-toast'
 import { api } from '@/services/api'
 import type { Facility } from '@/types'
@@ -62,7 +64,12 @@ export default function Facilities() {
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingFacility, setEditingFacility] = useState<Record<string, unknown> | null>(null)
   const [creating, setCreating] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const updateFacility = useUpdateFacility()
+  const deleteFacility = useDeleteFacility()
   const facilities = data?.items ?? []
 
   const [newName, setNewName] = useState('')
@@ -72,6 +79,14 @@ export default function Facilities() {
   const [newPhone, setNewPhone] = useState('')
   const [newEmail, setNewEmail] = useState('')
   const [newBedCount, setNewBedCount] = useState('')
+
+  const [editName, setEditName] = useState('')
+  const [editType, setEditType] = useState<Facility['type']>('hospital')
+  const [editAddress, setEditAddress] = useState('')
+  const [editCity, setEditCity] = useState('')
+  const [editPhone, setEditPhone] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editBedCount, setEditBedCount] = useState('')
 
   const filtered = facilities.filter((f) => {
     const matchesSearch =
@@ -118,6 +133,56 @@ export default function Facilities() {
       toast({ title: 'Erreur', description: "Impossible de créer l'établissement.", variant: 'destructive' })
     } finally {
       setCreating(false)
+    }
+  }
+
+  const openEditDialog = (facility: Record<string, unknown>) => {
+    setEditingFacility(facility)
+    setEditName((facility.name as string) || '')
+    setEditType(((facility.type as string) || 'hospital') as Facility['type'])
+    setEditAddress((facility.address as string) || '')
+    setEditCity((facility.city as string) || '')
+    setEditPhone((facility.phone as string) || '')
+    setEditEmail((facility.email as string) || '')
+    setEditBedCount(String(facility.bedCount ?? ''))
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdateFacility = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!editingFacility) return
+    setSaving(true)
+    try {
+      await updateFacility.mutateAsync({
+        id: editingFacility.id as string,
+        data: {
+          name: editName,
+          facilityType: TYPE_MAP[editType],
+          address: editAddress,
+          city: editCity,
+          phone: editPhone,
+          email: editEmail,
+          bedCount: parseInt(editBedCount) || 0,
+        },
+      })
+      toast({ title: 'Établissement mis à jour', description: `${editName} a été modifié.` })
+      setEditDialogOpen(false)
+      setEditingFacility(null)
+    } catch {
+      toast({ title: 'Erreur', description: "Impossible de modifier l'établissement.", variant: 'destructive' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDeleteFacility = async (facility: Record<string, unknown>) => {
+    const name = (facility.name as string) || 'cet établissement'
+    if (!confirm(`Êtes-vous sûr de vouloir supprimer "${name}" ? Cette action est irréversible.`)) return
+    try {
+      await deleteFacility.mutateAsync(facility.id as string)
+      toast({ title: 'Établissement supprimé', description: `"${name}" a été supprimé.` })
+    } catch {
+      toast({ title: 'Erreur', description: "Impossible de supprimer l'établissement.", variant: 'destructive' })
     }
   }
 
@@ -276,6 +341,105 @@ export default function Facilities() {
             </form>
           </DialogContent>
         </Dialog>
+        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Modifier l&apos;Établissement</DialogTitle>
+              <DialogDescription>
+                Modifiez les informations de l&apos;établissement.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdateFacility} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-fac-name">Nom</Label>
+                <Input
+                  id="edit-fac-name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Nom de l'établissement"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Type</Label>
+                <Select
+                  value={editType}
+                  onValueChange={(v) => setEditType(v as Facility['type'])}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hospital">Hôpital</SelectItem>
+                    <SelectItem value="clinic">Clinique</SelectItem>
+                    <SelectItem value="laboratory">Laboratoire</SelectItem>
+                    <SelectItem value="pharmacy">Pharmacie</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-fac-address">Adresse</Label>
+                <Input
+                  id="edit-fac-address"
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                  placeholder="Adresse complète"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-fac-city">Ville</Label>
+                <Input
+                  id="edit-fac-city"
+                  value={editCity}
+                  onChange={(e) => setEditCity(e.target.value)}
+                  placeholder="Ville"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-fac-phone">Téléphone</Label>
+                  <Input
+                    id="edit-fac-phone"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder="+213 ..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-fac-email">Email</Label>
+                  <Input
+                    id="edit-fac-email"
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="contact@..."
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-fac-beds">Nombre de lits</Label>
+                <Input
+                  id="edit-fac-beds"
+                  type="number"
+                  value={editBedCount}
+                  onChange={(e) => setEditBedCount(e.target.value)}
+                  placeholder="0"
+                  min={0}
+                />
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setEditDialogOpen(false)}
+                >
+                  Annuler
+                </Button>
+                <Button type="submit" disabled={saving}>{saving ? 'Enregistrement...' : 'Enregistrer'}</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row">
@@ -374,11 +538,29 @@ export default function Facilities() {
                         : '—'}
                     </span>
                   </div>
-                  <Button asChild variant="ghost" size="sm">
-                    <Link href={`/facilities/${facility.id}`}>
-                      Voir détails →
-                    </Link>
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => openEditDialog(facility as unknown as Record<string, unknown>)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive hover:text-destructive"
+                      onClick={() => handleDeleteFacility(facility as unknown as Record<string, unknown>)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                    <Button asChild variant="ghost" size="sm">
+                      <Link href={`/facilities/${facility.id}`}>
+                        Voir détails →
+                      </Link>
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>

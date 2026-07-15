@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
 import { Separator } from '@/components/ui/separator'
-import { mockClinicalCases, mockPatients, mockUsers, mockFacilities } from '@/lib/mock-data'
+import { useClinicalCasesData, usePatientsData, useUsersData, useFacilitiesData } from '@/hooks/use-data'
 import { formatDate } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import type { CaseStatus } from '@/types'
@@ -34,22 +34,24 @@ interface TreatmentEntry {
   facilityId: string
 }
 
-function buildEntries(): TreatmentEntry[] {
-  return mockClinicalCases.map((c) => {
-    const patient = mockPatients.find((p) => p.id === c.patientId)
-    const doctor = mockUsers.find((u) => u.id === c.assignedDoctorId)
-    return {
-      id: c.id,
-      date: c.createdAt,
-      patientName: patient ? `${patient.firstName} ${patient.lastName}` : 'Inconnu',
-      caseTitle: c.title,
-      diagnosis: c.diagnosis,
-      treatment: c.treatment || '—',
-      doctorName: doctor ? doctor.name : 'Inconnu',
-      status: c.status,
-      facilityId: c.facilityId,
-    }
-  })
+function buildEntries(
+  cases: Array<Record<string, unknown>>,
+  patients: Array<Record<string, unknown>>,
+  users: Array<Record<string, unknown>>,
+): TreatmentEntry[] {
+  const patientMap = new Map(patients.map((p) => [p.id, `${p.firstName || ''} ${p.lastName || ''}`.trim() || 'Inconnu']))
+  const userMap = new Map(users.map((u) => [u.id, u.name || 'Inconnu']))
+  return cases.map((c) => ({
+    id: c.id as string,
+    date: (c.createdAt as string) || new Date().toISOString(),
+    patientName: patientMap.get(c.patientId as string) || 'Inconnu',
+    caseTitle: (c.title as string) || 'Sans titre',
+    diagnosis: (c.diagnosis as string) || '—',
+    treatment: (c.treatment as string) || '—',
+    doctorName: (userMap.get(c.assignedDoctorId as string) as string) || 'Inconnu',
+    status: (c.status as CaseStatus) || 'draft',
+    facilityId: (c.facilityId as string) || '',
+  }))
 }
 
 export default function TreatmentHistoryPage() {
@@ -61,7 +63,17 @@ export default function TreatmentHistoryPage() {
   const [dateTo, setDateTo] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
 
-  const entries = useMemo(() => buildEntries(), [])
+  const { data: casesData, isLoading: casesLoading } = useClinicalCasesData()
+  const { data: patientsData } = usePatientsData()
+  const { data: usersData } = useUsersData()
+  const { data: facilitiesData } = useFacilitiesData()
+
+  const cases = ((casesData as unknown as { items?: Array<Record<string, unknown>> })?.items || []) as Array<Record<string, unknown>>
+  const patients = ((patientsData as unknown as { items?: Array<Record<string, unknown>> })?.items || []) as Array<Record<string, unknown>>
+  const users = ((usersData as unknown as { items?: Array<Record<string, unknown>> })?.items || []) as Array<Record<string, unknown>>
+  const facilities = ((facilitiesData as unknown as { items?: Array<Record<string, unknown>> })?.items || []) as Array<Record<string, unknown>>
+
+  const entries = useMemo(() => buildEntries(cases, patients, users), [cases, patients, users])
 
   const filtered = useMemo(() => {
     return entries.filter((e) => {
@@ -96,6 +108,14 @@ export default function TreatmentHistoryPage() {
     { label: 'Résolus', value: resolvedCount, color: 'text-green-600' },
     { label: 'Archivés', value: archivedCount, color: 'text-slate-500' },
   ]
+
+  if (casesLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <p className="text-muted-foreground">Chargement de l'historique...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -184,8 +204,8 @@ export default function TreatmentHistoryPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous</SelectItem>
-              {mockFacilities.map((f) => (
-                <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>
+              {facilities.map((f) => (
+                <SelectItem key={f.id as string} value={f.id as string}>{f.name as string}</SelectItem>
               ))}
             </SelectContent>
           </Select>

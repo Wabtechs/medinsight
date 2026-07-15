@@ -1,8 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, UserRound, Calendar, Phone, MapPin, Mail, Heart, FileText } from 'lucide-react'
+import {
+  ArrowLeft, UserRound, Calendar, Phone, MapPin, Mail, Heart, FileText, Loader2, Pencil,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,8 +20,33 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table'
-import { mockPatients, mockFacilities, mockClinicalCases, mockUsers } from '@/lib/mock-data'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select'
+import {
+  usePatientDetail,
+  useClinicalCasesData,
+  useUsersData,
+  useFacilitiesData,
+  useUpdatePatient,
+} from '@/hooks/use-data'
+import { useToast } from '@/hooks/use-toast'
 import { cn, formatDate } from '@/lib/utils'
+import { sanitizeUuid } from '@/lib/validation'
 import type { CaseStatus, CasePriority } from '@/types'
 
 const bloodTypeColors: Record<string, string> = {
@@ -66,9 +94,30 @@ export default function PatientDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
 
-  const patient = mockPatients.find((p) => p.id === id)
+  const { data: patient, isLoading, error } = usePatientDetail(id)
+  const { data: casesData } = useClinicalCasesData()
+  const { data: usersData } = useUsersData()
+  const { data: facilitiesData } = useFacilitiesData()
+  const updatePatient = useUpdatePatient()
+  const { toast } = useToast()
 
-  if (!patient) {
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [editForm, setEditForm] = useState({
+    firstName: '', lastName: '', dateOfBirth: '', gender: '' as 'M' | 'F' | '',
+    phone: '', address: '', bloodType: '', facilityId: '', allergies: '',
+  })
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Chargement du patient...</p>
+      </div>
+    )
+  }
+
+  if (error || !patient) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20">
         <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
@@ -76,7 +125,7 @@ export default function PatientDetailPage() {
         </div>
         <h1 className="text-2xl font-bold">Patient non trouvé</h1>
         <p className="text-muted-foreground">
-          Le patient demandé n'existe pas ou a été supprimé.
+          Le patient demandé n&apos;existe pas ou a été supprimé.
         </p>
         <Button asChild>
           <Link href="/patients">
@@ -88,44 +137,106 @@ export default function PatientDetailPage() {
     )
   }
 
-  const facility = mockFacilities.find((f) => f.id === patient.facilityId)
-  const cases = mockClinicalCases.filter((c) => c.patientId === patient.id)
-  const getDoctorName = (doctorId: string) =>
-    mockUsers.find((u) => u.id === doctorId)?.name ?? '—'
+  const p = patient as Record<string, unknown>
+  const firstName = (p.firstName as string) || ''
+  const lastName = (p.lastName as string) || ''
+  const gender = (p.gender as string) || (p.sex as string) || ''
+  const bloodType = (p.bloodType as string) || (p.bloodGroup as string) || ''
+  const phone = (p.phone as string) || '—'
+  const email = (p.email as string) || ''
+  const address = (p.address as string) || '—'
+  const dateOfBirth = (p.dateOfBirth as string) || ''
+  const medicalRecordNumber = (p.medicalRecordNumber as string) || (p.patientUuid as string) || ''
+  const isActive = p.isActive !== false
+  const facilityId = (p.facilityId as string) || ''
+  const allergies = (p.allergies as string[]) || []
+  const createdAt = (p.createdAt as string) || ''
+  const patientId = (p.id as string) || id
+
+  const facilitiesList = ((facilitiesData as { items?: Array<{ id: string; name: string }> })?.items ?? []) as Array<{ id: string; name: string }>
+
+  const openEditDialog = () => {
+    setEditForm({
+      firstName, lastName, dateOfBirth, gender: gender as 'M' | 'F' | '',
+      phone: phone === '—' ? '' : phone, address: address === '—' ? '' : address,
+      bloodType, facilityId, allergies: allergies.join(', '),
+    })
+    setEditDialogOpen(true)
+  }
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      await updatePatient.mutateAsync({
+        id: patientId,
+        data: {
+          firstname: editForm.firstName, lastname: editForm.lastName,
+          dateOfBirth: editForm.dateOfBirth, sex: editForm.gender,
+          phone: editForm.phone, address: editForm.address,
+          bloodGroup: editForm.bloodType, facilityId: sanitizeUuid(editForm.facilityId),
+          allergies: editForm.allergies ? editForm.allergies.split(',').map(a => a.trim()).filter(Boolean) : [],
+        },
+      })
+      toast({ title: 'Patient mis à jour', description: 'Les modifications ont été enregistrées.' })
+      setEditDialogOpen(false)
+    } catch {
+      toast({ title: 'Erreur', description: 'Impossible de modifier le patient.', variant: 'destructive' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const facilityMap = (facilitiesData as { items?: Array<{ id: string; name: string }> })?.items
+    ? Object.fromEntries((facilitiesData as { items: Array<{ id: string; name: string }> }).items.map((f) => [f.id, f.name]))
+    : {}
+  const facilityName = facilityMap[facilityId] || '—'
+
+  const userMap = (usersData as { items?: Array<{ id: string; firstName?: string; lastName?: string; name?: string }> })?.items
+    ? Object.fromEntries((usersData as { items: Array<{ id: string; firstName?: string; lastName?: string; name?: string }> }).items.map((u) => [u.id, u.firstName && u.lastName ? `${u.firstName} ${u.lastName}` : u.name || '—']))
+    : {}
+
+  const allCases = ((casesData as unknown as { items?: Array<Record<string, unknown>> })?.items || []) as Record<string, unknown>[]
+  const cases = allCases.filter((c) => c.patientId === patientId || c.patient_id === patientId)
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" onClick={() => router.push('/patients')} className="w-fit">
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Retour à la liste
-      </Button>
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" onClick={() => router.push('/patients')} className="w-fit">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour à la liste
+        </Button>
+        <Button variant="outline" size="sm" onClick={openEditDialog}>
+          <Pencil className="mr-2 h-4 w-4" />
+          Modifier
+        </Button>
+      </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <Avatar className="h-20 w-20">
-          <AvatarImage src={patient.email ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${patient.id}` : undefined} />
+          <AvatarImage src={email ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${patientId}` : undefined} />
           <AvatarFallback className="text-2xl">
-            {patient.firstName[0]}
-            {patient.lastName[0]}
+            {(firstName || '?')[0]}{(lastName || '?')[0]}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">
-              {patient.firstName} {patient.lastName}
+              {firstName} {lastName}
             </h1>
             <Badge
-              variant={patient.isActive ? 'default' : 'secondary'}
+              variant={isActive ? 'default' : 'secondary'}
               className={cn(
-                patient.isActive
+                isActive
                   ? 'bg-green-100 text-green-800 hover:bg-green-100'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-100'
               )}
             >
-              {patient.isActive ? 'Actif' : 'Inactif'}
+              {isActive ? 'Actif' : 'Inactif'}
             </Badge>
           </div>
           <p className="mt-1 font-mono text-sm text-muted-foreground">
-            {patient.medicalRecordNumber}
+            {medicalRecordNumber}
           </p>
         </div>
       </div>
@@ -145,7 +256,7 @@ export default function PatientDetailPage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Date de Naissance</p>
-                  <p className="text-sm font-medium">{formatDate(patient.dateOfBirth)}</p>
+                  <p className="text-sm font-medium">{formatDate(dateOfBirth)}</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -155,7 +266,7 @@ export default function PatientDetailPage() {
                 <div>
                   <p className="text-xs text-muted-foreground">Sexe</p>
                   <p className="text-sm font-medium">
-                    {patient.gender === 'M' ? 'Masculin' : 'Féminin'}
+                    {gender === 'M' ? 'Masculin' : gender === 'F' ? 'Féminin' : gender || '—'}
                   </p>
                 </div>
               </div>
@@ -165,12 +276,16 @@ export default function PatientDetailPage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Groupe Sanguin</p>
-                  <Badge
-                    variant="outline"
-                    className={cn('font-mono', bloodTypeColors[patient.bloodType])}
-                  >
-                    {patient.bloodType}
-                  </Badge>
+                  {bloodType ? (
+                    <Badge
+                      variant="outline"
+                      className={cn('font-mono', bloodTypeColors[bloodType])}
+                    >
+                      {bloodType}
+                    </Badge>
+                  ) : (
+                    <p className="text-sm font-medium">—</p>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-3">
@@ -179,17 +294,17 @@ export default function PatientDetailPage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Téléphone</p>
-                  <p className="text-sm font-medium">{patient.phone}</p>
+                  <p className="text-sm font-medium">{phone}</p>
                 </div>
               </div>
-              {patient.email && (
+              {email && (
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
                     <Mail className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Email</p>
-                    <p className="text-sm font-medium">{patient.email}</p>
+                    <p className="text-sm font-medium">{email}</p>
                   </div>
                 </div>
               )}
@@ -199,7 +314,7 @@ export default function PatientDetailPage() {
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">Adresse</p>
-                  <p className="text-sm font-medium">{patient.address}</p>
+                  <p className="text-sm font-medium">{address}</p>
                 </div>
               </div>
             </div>
@@ -214,8 +329,8 @@ export default function PatientDetailPage() {
             <div>
               <p className="mb-2 text-xs font-medium text-muted-foreground">Allergies</p>
               <div className="flex flex-wrap gap-2">
-                {patient.allergies.length > 0 ? (
-                  patient.allergies.map((allergy) => (
+                {allergies.length > 0 ? (
+                  allergies.map((allergy) => (
                     <Badge key={allergy} variant="destructive" className="font-normal">
                       {allergy}
                     </Badge>
@@ -229,21 +344,15 @@ export default function PatientDetailPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <p className="text-xs text-muted-foreground">Établissement</p>
-                <p className="text-sm font-medium">{facility?.name ?? '—'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Dernière Visite</p>
-                <p className="text-sm font-medium">
-                  {patient.lastVisit ? formatDate(patient.lastVisit) : '—'}
-                </p>
+                <p className="text-sm font-medium">{facilityName}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Date de Création</p>
-                <p className="text-sm font-medium">{formatDate(patient.createdAt)}</p>
+                <p className="text-sm font-medium">{formatDate(createdAt)}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">N° Dossier</p>
-                <p className="font-mono text-sm font-medium">{patient.medicalRecordNumber}</p>
+                <p className="font-mono text-sm font-medium">{medicalRecordNumber}</p>
               </div>
             </div>
           </CardContent>
@@ -260,10 +369,6 @@ export default function PatientDetailPage() {
             <Badge variant="secondary" className="ml-1 text-xs">
               {cases.length}
             </Badge>
-          </TabsTrigger>
-          <TabsTrigger value="history" className="gap-2">
-            <Calendar className="h-4 w-4" />
-            Historique
           </TabsTrigger>
         </TabsList>
 
@@ -282,37 +387,42 @@ export default function PatientDetailPage() {
                 </TableHeader>
                 <TableBody>
                   {cases.length > 0 ? (
-                    cases.map((c) => (
-                      <TableRow
-                        key={c.id}
-                        className="cursor-pointer"
-                        onClick={() => router.push(`/clinical-cases/${c.id}`)}
-                      >
-                        <TableCell className="font-medium">{c.title}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={cn('font-normal', statusColors[c.status])}
-                          >
-                            {statusLabels[c.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="outline"
-                            className={cn('font-normal', priorityColors[c.priority])}
-                          >
-                            {priorityLabels[c.priority]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden text-sm text-muted-foreground sm:table-cell">
-                          {formatDate(c.createdAt)}
-                        </TableCell>
-                        <TableCell className="hidden text-sm md:table-cell">
-                          {getDoctorName(c.assignedDoctorId)}
-                        </TableCell>
-                      </TableRow>
-                    ))
+                    cases.map((c) => {
+                      const caseStatus = (c.status as CaseStatus) || 'active'
+                      const casePriority = (c.priority as CasePriority) || 'medium'
+                      const doctorId = (c.assignedDoctorId as string) || (c.doctorId as string) || ''
+                      return (
+                        <TableRow
+                          key={c.id as string}
+                          className="cursor-pointer"
+                          onClick={() => router.push(`/clinical-cases/${c.id}`)}
+                        >
+                          <TableCell className="font-medium">{(c.title as string) || '—'}</TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={cn('font-normal', statusColors[caseStatus])}
+                            >
+                              {statusLabels[caseStatus] || caseStatus}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={cn('font-normal', priorityColors[casePriority])}
+                            >
+                              {priorityLabels[casePriority] || casePriority}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="hidden text-sm text-muted-foreground sm:table-cell">
+                            {formatDate(c.createdAt as string)}
+                          </TableCell>
+                          <TableCell className="hidden text-sm md:table-cell">
+                            {userMap[doctorId] || '—'}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
                   ) : (
                     <TableRow>
                       <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
@@ -325,43 +435,101 @@ export default function PatientDetailPage() {
             </CardContent>
           </Card>
         </TabsContent>
-
-        <TabsContent value="history" className="mt-4">
-          <Card>
-            <CardContent className="space-y-4 py-6">
-              {[
-                {
-                  date: '2026-07-10T09:00:00Z',
-                  title: 'Consultation de routine',
-                  description: 'Contrôle annuel, résultats dans les normes.',
-                },
-                {
-                  date: '2026-04-15T14:30:00Z',
-                  title: 'Renouvellement ordonnance',
-                  description: 'Renouvellement du traitement chronique.',
-                },
-                {
-                  date: '2025-12-20T11:00:00Z',
-                  title: 'Bilan sanguin complet',
-                  description: 'Bilan biologique annuel réalisé au laboratoire.',
-                },
-              ].map((entry, i) => (
-                <div key={i} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <div className="h-3 w-3 rounded-full bg-primary" />
-                    {i < 2 && <div className="w-px flex-1 bg-border" />}
-                  </div>
-                  <div className="pb-4">
-                    <p className="text-xs text-muted-foreground">{formatDate(entry.date)}</p>
-                    <p className="text-sm font-medium">{entry.title}</p>
-                    <p className="text-sm text-muted-foreground">{entry.description}</p>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Modifier le patient</DialogTitle>
+            <DialogDescription>
+              Modifiez les informations du patient ci-dessous.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleUpdate} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">Prénom</Label>
+                <Input id="firstName" value={editForm.firstName} onChange={(e) => setEditForm({ ...editForm, firstName: e.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Nom</Label>
+                <Input id="lastName" value={editForm.lastName} onChange={(e) => setEditForm({ ...editForm, lastName: e.target.value })} required />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="dateOfBirth">Date de naissance</Label>
+                <Input id="dateOfBirth" type="date" value={editForm.dateOfBirth} onChange={(e) => setEditForm({ ...editForm, dateOfBirth: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="gender">Sexe</Label>
+                <Select value={editForm.gender} onValueChange={(v: 'M' | 'F') => setEditForm({ ...editForm, gender: v })}>
+                  <SelectTrigger id="gender">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="M">Masculin</SelectItem>
+                    <SelectItem value="F">Féminin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Téléphone</Label>
+              <Input id="phone" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="address">Adresse</Label>
+              <Input id="address" value={editForm.address} onChange={(e) => setEditForm({ ...editForm, address: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="bloodType">Groupe sanguin</Label>
+                <Select value={editForm.bloodType} onValueChange={(v) => setEditForm({ ...editForm, bloodType: v })}>
+                  <SelectTrigger id="bloodType">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A+">A+</SelectItem>
+                    <SelectItem value="A-">A-</SelectItem>
+                    <SelectItem value="B+">B+</SelectItem>
+                    <SelectItem value="B-">B-</SelectItem>
+                    <SelectItem value="AB+">AB+</SelectItem>
+                    <SelectItem value="AB-">AB-</SelectItem>
+                    <SelectItem value="O+">O+</SelectItem>
+                    <SelectItem value="O-">O-</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="facilityId">Établissement</Label>
+                <Select value={editForm.facilityId} onValueChange={(v) => setEditForm({ ...editForm, facilityId: v })}>
+                  <SelectTrigger id="facilityId">
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {facilitiesList.map((fac) => (
+                      <SelectItem key={fac.id} value={fac.id}>{fac.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="allergies">Allergies (séparées par des virgules)</Label>
+              <Input id="allergies" value={editForm.allergies} onChange={(e) => setEditForm({ ...editForm, allergies: e.target.value })} placeholder="Ex: Pénicilline, Arachides" />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditDialogOpen(false)} disabled={saving}>
+                Annuler
+              </Button>
+              <Button type="submit" disabled={saving}>
+                {saving ? 'Enregistrement...' : 'Enregistrer'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

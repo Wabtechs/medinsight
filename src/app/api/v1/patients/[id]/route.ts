@@ -50,3 +50,27 @@ export async function PUT(
     return apiError(500, 'Internal server error')
   }
 }
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    const [deleted] = await getDb()
+      .update(patients)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(patients.id, id))
+      .returning()
+
+    if (!deleted) {
+      return apiError(404, 'Patient not found')
+    }
+
+    return NextResponse.json({ detail: 'Patient deleted' })
+  } catch (e) {
+    logError('DELETE /patients/[id]', e)
+    return apiError(500, 'Internal server error')
+  }
+}
