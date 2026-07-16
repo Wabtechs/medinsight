@@ -164,7 +164,20 @@ async function seed() {
 
   const db = getDb()
 
-  const insertedFacilities = await db.insert(facilities).values(facilityData).returning({ id: facilities.id })
+  await db.delete(auditLogs)
+  await db.delete(clinicalCases)
+  await db.delete(patients)
+  await db.delete(users)
+  await db.delete(facilities)
+  console.log('  ✓ Cleaned existing data')
+
+  const insertedFacilities = await db.insert(facilities).values(facilityData.map((f) => ({
+    ...f,
+    id: crypto.randomUUID(),
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }))).returning({ id: facilities.id })
   console.log(`  ✓ ${insertedFacilities.length} facilities`)
 
   const passwordHash = await hashPassword('admin123')
@@ -183,20 +196,25 @@ async function seed() {
 
   const insertedUsers = await db.insert(users).values(
     userData.map((u) => ({
+      id: crypto.randomUUID(),
       firstname: u.firstname,
       lastname: u.lastname,
       email: u.email,
       passwordHash: hashByRole[u.role],
       role: u.role,
       facilityId: insertedFacilities[u.facilityIndex].id,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }))
   ).returning({ id: users.id })
   console.log(`  ✓ ${insertedUsers.length} users`)
 
   const insertedPatients = await db.insert(patients).values(
     patientData.map((p) => ({
+      id: crypto.randomUUID(),
       facilityId: insertedFacilities[p.facilityIndex].id,
-      patientUuid: p.patientUuid,
+      patientUuid: crypto.randomUUID(),
       firstname: p.firstname,
       lastname: p.lastname,
       sex: p.sex,
@@ -209,12 +227,15 @@ async function seed() {
       allergies: p.allergies,
       medicalHistoryJson: {},
       isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }))
   ).returning({ id: patients.id })
   console.log(`  ✓ ${insertedPatients.length} patients`)
 
   const insertedCases = await db.insert(clinicalCases).values(
     caseData.map((c) => ({
+      id: crypto.randomUUID(),
       facilityId: insertedFacilities[c.facilityIndex].id,
       patientId: insertedPatients[c.patientIndex].id,
       doctorId: insertedUsers[c.doctorIndex].id,
@@ -228,12 +249,15 @@ async function seed() {
       priority: c.priority,
       tagsJson: c.tagsJson,
       isSynced: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }))
   ).returning({ id: clinicalCases.id })
   console.log(`  ✓ ${insertedCases.length} clinical cases`)
 
   await db.insert(auditLogs).values(
     auditData.map((a, i) => ({
+      id: crypto.randomUUID(),
       userId: insertedUsers[i % insertedUsers.length].id,
       facilityId: insertedFacilities[i % insertedFacilities.length].id,
       action: a.action,
@@ -241,6 +265,7 @@ async function seed() {
       resourceId: insertedPatients[i % insertedPatients.length].id,
       details: a.details,
       ipAddress: a.ip,
+      timestamp: new Date(),
     }))
   )
   console.log(`  ✓ ${auditData.length} audit logs`)
