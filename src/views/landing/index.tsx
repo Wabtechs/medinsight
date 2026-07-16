@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { Logo } from '@/components/ui/logo'
@@ -265,14 +266,13 @@ export default function LandingPage() {
           </div>
 
           <div className="hidden animate-fade-in-up lg:block" style={{ animationDelay: '0.2s' }}>
-            <img
+            <Image
               src="/hero-illustration.png"
               alt="MedInsight Dashboard"
+              width={800}
+              height={600}
               className="aspect-[4/3] w-full rounded-3xl border border-white/10 shadow-2xl object-cover"
-              width="800"
-              height="600"
-              loading="eager"
-              fetchPriority="high"
+              priority
             />
           </div>
         </div>
@@ -371,13 +371,12 @@ export default function LandingPage() {
               </Button>
             </div>
 
-            <img
+            <Image
               src="/about-illustration.png"
               alt="MedInsight Team"
+              width={600}
+              height={660}
               className="aspect-[1/1.1] w-full rounded-3xl shadow-xl object-cover"
-              width="600"
-              height="660"
-              loading="lazy"
             />
           </div>
         </div>

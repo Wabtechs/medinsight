@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { useAppStore } from "@/store";
 import { cn } from "@/lib/utils";
 
@@ -14,10 +15,13 @@ export function Logo({ className, variant }: LogoProps) {
   const src = isDark ? "/logo-dark-mode.png" : "/logo-light-mode.png";
 
   return (
-    <img
+    <Image
       src={src}
       alt="MedInsight"
+      width={28}
+      height={28}
       className={cn("object-contain", className)}
+      priority
     />
   );
 }

@@ -1,4 +1,7 @@
+'use client'
+
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import { Activity, CheckCircle, Clock } from 'lucide-react'
 import {
   Card,
@@ -11,8 +14,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { RechartsChart } from '@/components/charts/recharts-chart'
 import { mockChartData } from '@/lib/mock-data'
+
+const LazyRechartsChart = dynamic(
+  () => import('@/components/charts/recharts-chart').then(m => ({ default: m.RechartsChart })),
+  { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-lg bg-muted" /> }
+)
 import { formatNumber } from '@/lib/utils'
 
 const PERIODS = [
@@ -105,7 +112,7 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <RechartsChart
+        <LazyRechartsChart
           type="bar"
           data={mockChartData.casesByFacility}
           dataKey="value"
@@ -114,7 +121,7 @@ export default function AnalyticsPage() {
           description="Nombre de cas cliniques par établissement"
           height={320}
         />
-        <RechartsChart
+        <LazyRechartsChart
           type="pie"
           data={mockChartData.treatmentOutcomes}
           dataKey="value"
@@ -123,7 +130,7 @@ export default function AnalyticsPage() {
           description="Répartition des issues thérapeutiques"
           height={320}
         />
-        <RechartsChart
+        <LazyRechartsChart
           type="line"
           data={mockChartData.casesByMonth}
           dataKey="value"
@@ -133,7 +140,7 @@ export default function AnalyticsPage() {
           height={320}
           color="#1e84b5"
         />
-        <RechartsChart
+        <LazyRechartsChart
           type="bar"
           data={mockChartData.casesByStatus}
           dataKey="value"

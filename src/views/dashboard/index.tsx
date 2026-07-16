@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import {
   FolderOpen,
   UserRound,
@@ -22,8 +23,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { RechartsChart } from '@/components/charts/recharts-chart'
 import { useDashboardData } from '@/hooks/use-data'
+
+const LazyRechartsChart = dynamic(
+  () => import('@/components/charts/recharts-chart').then(m => ({ default: m.RechartsChart })),
+  { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-lg bg-muted" /> }
+)
 import { formatDate, formatNumber } from '@/lib/utils'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -120,7 +125,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <RechartsChart
+        <LazyRechartsChart
           type="area"
           data={chartData.casesByMonth}
           dataKey="value"
@@ -129,7 +134,7 @@ export default function DashboardPage() {
           description="Évolution mensuelle des cas cliniques"
           height={300}
         />
-        <RechartsChart
+        <LazyRechartsChart
           type="pie"
           data={chartData.casesByStatus}
           dataKey="value"

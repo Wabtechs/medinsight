@@ -1,3 +1,4 @@
+import dynamic from 'next/dynamic'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -5,7 +6,11 @@ import { Separator } from "@/components/ui/separator";
 import { mockClinicalCases, mockChartData } from "@/lib/mock-data";
 import { useAuthStore } from "@/store/auth-store";
 import { useToast } from "@/hooks/use-toast";
-import { RechartsChart } from "@/components/charts/recharts-chart";
+
+const LazyRechartsChart = dynamic(
+  () => import('@/components/charts/recharts-chart').then(m => ({ default: m.RechartsChart })),
+  { ssr: false, loading: () => <div className="h-64 animate-pulse rounded-lg bg-muted" /> }
+)
 import {
   FlaskConical,
   BookOpen,
@@ -163,7 +168,7 @@ export default function ResearchPage() {
             <CardDescription>Répartition des cas cliniques analysés</CardDescription>
           </CardHeader>
           <CardContent>
-            <RechartsChart
+            <LazyRechartsChart
               type="bar"
               data={mockChartData.casesByFacility}
               dataKey="value"
@@ -181,7 +186,7 @@ export default function ResearchPage() {
             <CardDescription>Nombre de cas analysés par mois</CardDescription>
           </CardHeader>
           <CardContent>
-            <RechartsChart
+            <LazyRechartsChart
               type="line"
               data={mockChartData.casesByMonth}
               dataKey="value"
